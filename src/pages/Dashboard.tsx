@@ -22,7 +22,9 @@ import {
   Clock,
   CheckCircle2,
   AlertCircle,
-  Loader2
+  Loader2,
+  DollarSign,
+  Receipt
 } from "lucide-react";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
@@ -85,6 +87,27 @@ interface BankAccount {
   is_connected: boolean;
 }
 
+interface PaymentPlan {
+  id: string;
+  bill_id: string | null;
+  total_amount: number;
+  amount_paid: number;
+  installment_amount: number;
+  installments_total: number;
+  installments_paid: number;
+  status: string;
+  next_payment_date: string | null;
+}
+
+interface PaymentInstallment {
+  id: string;
+  payment_plan_id: string;
+  amount: number;
+  due_date: string;
+  paid_at: string | null;
+  status: string;
+}
+
 export default function DashboardPage() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -93,10 +116,13 @@ export default function DashboardPage() {
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [vehicle, setVehicle] = useState<Vehicle | null>(null);
   const [bankAccount, setBankAccount] = useState<BankAccount | null>(null);
+  const [paymentPlans, setPaymentPlans] = useState<PaymentPlan[]>([]);
+  const [installments, setInstallments] = useState<PaymentInstallment[]>([]);
   const [loading, setLoading] = useState(true);
   const [addBillOpen, setAddBillOpen] = useState(false);
   const [manageBankOpen, setManageBankOpen] = useState(false);
   const [manageVehicleOpen, setManageVehicleOpen] = useState(false);
+  const [paymentPlanOpen, setPaymentPlanOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   
   // New bill form
@@ -166,6 +192,27 @@ export default function DashboardPage() {
       if (bankData) {
         setBankAccount(bankData as BankAccount);
       }
+
+      // Fetch payment plans
+      const { data: plansData, error: plansError } = await supabase
+        .from("payment_plans")
+        .select("*")
+        .eq("user_id", user!.id)
+        .order("created_at", { ascending: false });
+      
+      if (plansError) throw plansError;
+      setPaymentPlans((plansData as PaymentPlan[]) || []);
+
+      // Fetch installments
+      const { data: installmentsData, error: installmentsError } = await supabase
+        .from("payment_installments")
+        .select("*")
+        .eq("user_id", user!.id)
+        .order("due_date", { ascending: true });
+      
+      if (installmentsError) throw installmentsError;
+      setInstallments((installmentsData as PaymentInstallment[]) || []);
+
     } catch (error) {
       console.error("Error fetching data:", error);
       toast({
@@ -204,16 +251,44 @@ export default function DashboardPage() {
     setSubmitting(true);
     try {
       // Insert bill
-      const { error: billError } = await supabase.from("bills").insert({
+      const { data: billData, error: billError } = await supabase.from("bills").insert({
         user_id: user.id,
         name: newBillName,
         category: newBillCategory,
         amount: amount,
         due_date: newBillDueDate,
-        status: "pending",
-      });
+        status: "scheduled",
+      }).select().single();
 
       if (billError) throw billError;
+
+      // Create payment plan for this bill (4 weekly installments)
+      const installmentAmount = amount / 4;
+      const { data: planData, error: planError } = await supabase.from("payment_plans").insert({
+        user_id: user.id,
+        bill_id: billData.id,
+        total_amount: amount,
+        installment_amount: installmentAmount,
+        installments_total: 4,
+        next_payment_date: addDays(new Date(), 7).toISOString().split("T")[0],
+      }).select().single();
+
+      if (planError) throw planError;
+
+      // Create 4 installments
+      const installmentsToCreate = [];
+      for (let i = 0; i < 4; i++) {
+        installmentsToCreate.push({
+          payment_plan_id: planData.id,
+          user_id: user.id,
+          amount: installmentAmount,
+          due_date: addDays(new Date(), 7 * (i + 1)).toISOString().split("T")[0],
+          status: "pending",
+        });
+      }
+
+      const { error: installmentsError } = await supabase.from("payment_installments").insert(installmentsToCreate);
+      if (installmentsError) throw installmentsError;
 
       // Update access used
       const { error: subError } = await supabase
@@ -225,7 +300,7 @@ export default function DashboardPage() {
 
       toast({
         title: "Bill added",
-        description: `${newBillName} has been added to your upcoming bills.`,
+        description: `${newBillName} has been added with a 4-week payment plan.`,
       });
 
       setAddBillOpen(false);
@@ -272,6 +347,65 @@ export default function DashboardPage() {
   const daysUntilSettlement = subscription?.next_settlement_date
     ? Math.ceil((new Date(subscription.next_settlement_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
     : 18;
+
+  // Payment plan calculations
+  const activePaymentPlans = paymentPlans.filter(p => p.status === 'active');
+  const totalOutstanding = activePaymentPlans.reduce((sum, p) => sum + (p.total_amount - p.amount_paid), 0);
+  const pendingInstallments = installments.filter(i => i.status === 'pending' || i.status === 'overdue');
+  const nextInstallment = pendingInstallments[0];
+
+  const handleMakePayment = async (installmentId: string, amount: number, planId: string) => {
+    if (!user) return;
+    setSubmitting(true);
+
+    try {
+      // Update installment to paid
+      const { error: installmentError } = await supabase
+        .from("payment_installments")
+        .update({ 
+          status: "paid",
+          paid_at: new Date().toISOString()
+        })
+        .eq("id", installmentId);
+
+      if (installmentError) throw installmentError;
+
+      // Update payment plan
+      const plan = paymentPlans.find(p => p.id === planId);
+      if (plan) {
+        const newAmountPaid = plan.amount_paid + amount;
+        const newInstallmentsPaid = plan.installments_paid + 1;
+        const isCompleted = newInstallmentsPaid >= plan.installments_total;
+
+        const { error: planError } = await supabase
+          .from("payment_plans")
+          .update({ 
+            amount_paid: newAmountPaid,
+            installments_paid: newInstallmentsPaid,
+            status: isCompleted ? "completed" : "active",
+          })
+          .eq("id", planId);
+
+        if (planError) throw planError;
+      }
+
+      toast({
+        title: "Payment successful!",
+        description: `$${amount.toFixed(2)} payment has been processed.`,
+      });
+
+      fetchData();
+    } catch (error) {
+      console.error("Error making payment:", error);
+      toast({
+        title: "Payment failed",
+        description: "Please try again or contact support.",
+        variant: "destructive",
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -363,6 +497,67 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
           </div>
+
+          {/* Payment Plan Card */}
+          {(activePaymentPlans.length > 0 || totalOutstanding > 0) && (
+            <Card className="mb-8 animate-fade-in [animation-delay:150ms] opacity-0 border-accent/30">
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Receipt className="h-5 w-5 text-accent" />
+                    <CardTitle className="text-lg">Your Payment Plan</CardTitle>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={() => setPaymentPlanOpen(true)}>
+                    View Details
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="rounded-xl border border-border bg-secondary/30 p-4">
+                    <p className="text-sm text-muted-foreground mb-1">Outstanding Balance</p>
+                    <p className="text-2xl font-bold text-foreground">${totalOutstanding.toFixed(2)}</p>
+                  </div>
+                  <div className="rounded-xl border border-border bg-secondary/30 p-4">
+                    <p className="text-sm text-muted-foreground mb-1">Active Plans</p>
+                    <p className="text-2xl font-bold text-foreground">{activePaymentPlans.length}</p>
+                  </div>
+                  <div className="rounded-xl border border-border bg-secondary/30 p-4">
+                    <p className="text-sm text-muted-foreground mb-1">Pending Payments</p>
+                    <p className="text-2xl font-bold text-foreground">{pendingInstallments.length}</p>
+                  </div>
+                </div>
+                
+                {nextInstallment && (
+                  <div className="mt-4 rounded-xl border border-accent/30 bg-accent/5 p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Next Payment Due</p>
+                        <p className="text-lg font-semibold text-foreground">
+                          ${nextInstallment.amount.toFixed(2)} on {format(new Date(nextInstallment.due_date), "MMM d")}
+                        </p>
+                      </div>
+                      <Button 
+                        variant="accent" 
+                        size="sm"
+                        onClick={() => {
+                          const plan = paymentPlans.find(p => 
+                            installments.some(i => i.payment_plan_id === p.id && i.id === nextInstallment.id)
+                          );
+                          if (plan) {
+                            handleMakePayment(nextInstallment.id, nextInstallment.amount, plan.id);
+                          }
+                        }}
+                        disabled={submitting}
+                      >
+                        {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Pay Now"}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
           
           {/* Upcoming Bills */}
           <Card className="animate-fade-in [animation-delay:200ms] opacity-0">
@@ -684,6 +879,107 @@ export default function DashboardPage() {
               </Link>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Payment Plan Dialog */}
+      <Dialog open={paymentPlanOpen} onOpenChange={setPaymentPlanOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Payment Plans</DialogTitle>
+            <DialogDescription>
+              Manage your repayment installments for covered bills.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 max-h-96 overflow-y-auto">
+            {activePaymentPlans.length === 0 ? (
+              <div className="text-center py-6">
+                <DollarSign className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+                <p className="text-muted-foreground">No active payment plans</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Add a bill to create a payment plan
+                </p>
+              </div>
+            ) : (
+              activePaymentPlans.map((plan) => {
+                const planInstallments = installments.filter(i => i.payment_plan_id === plan.id);
+                const bill = bills.find(b => b.id === plan.bill_id);
+                const progressPercent = (plan.amount_paid / plan.total_amount) * 100;
+                
+                return (
+                  <div key={plan.id} className="rounded-xl border border-border p-4 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium text-foreground">{bill?.name || "Bill Payment"}</p>
+                        <p className="text-sm text-muted-foreground">
+                          ${plan.amount_paid.toFixed(2)} of ${plan.total_amount.toFixed(2)} paid
+                        </p>
+                      </div>
+                      <Badge variant={plan.status === "completed" ? "success" : "outline"}>
+                        {plan.installments_paid}/{plan.installments_total} payments
+                      </Badge>
+                    </div>
+                    
+                    <Progress value={progressPercent} className="h-2" />
+                    
+                    <div className="space-y-2">
+                      {planInstallments.map((inst) => (
+                        <div 
+                          key={inst.id} 
+                          className={`flex items-center justify-between p-3 rounded-lg ${
+                            inst.status === "paid" ? "bg-success/10" : 
+                            inst.status === "overdue" ? "bg-destructive/10" : "bg-secondary/50"
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            {inst.status === "paid" ? (
+                              <CheckCircle2 className="h-4 w-4 text-success" />
+                            ) : inst.status === "overdue" ? (
+                              <AlertCircle className="h-4 w-4 text-destructive" />
+                            ) : (
+                              <Clock className="h-4 w-4 text-muted-foreground" />
+                            )}
+                            <div>
+                              <p className="text-sm font-medium text-foreground">${inst.amount.toFixed(2)}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {inst.status === "paid" 
+                                  ? `Paid ${inst.paid_at ? format(new Date(inst.paid_at), "MMM d") : ""}`
+                                  : `Due ${format(new Date(inst.due_date), "MMM d")}`
+                                }
+                              </p>
+                            </div>
+                          </div>
+                          {inst.status === "pending" && (
+                            <Button
+                              variant="accent"
+                              size="sm"
+                              onClick={() => handleMakePayment(inst.id, inst.amount, plan.id)}
+                              disabled={submitting}
+                            >
+                              {submitting ? <Loader2 className="h-3 w-3 animate-spin" /> : "Pay"}
+                            </Button>
+                          )}
+                          {inst.status === "overdue" && (
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => handleMakePayment(inst.id, inst.amount, plan.id)}
+                              disabled={submitting}
+                            >
+                              {submitting ? <Loader2 className="h-3 w-3 animate-spin" /> : "Pay Now"}
+                            </Button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+          <Button variant="outline" className="w-full" onClick={() => setPaymentPlanOpen(false)}>
+            Close
+          </Button>
         </DialogContent>
       </Dialog>
     </div>
