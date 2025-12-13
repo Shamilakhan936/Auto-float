@@ -827,11 +827,27 @@ export default function DashboardPage() {
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Rent">Rent</SelectItem>
-                  <SelectItem value="Utilities">Utilities</SelectItem>
-                  <SelectItem value="Phone">Phone</SelectItem>
-                  <SelectItem value="Insurance">Insurance</SelectItem>
-                  <SelectItem value="Internet">Internet</SelectItem>
+                  <SelectItem value="rent">Rent/Mortgage</SelectItem>
+                  <SelectItem value="utilities">Utilities</SelectItem>
+                  <SelectItem value="phone">Phone/Internet</SelectItem>
+                  <SelectItem value="insurance">Insurance</SelectItem>
+                  <SelectItem value="childcare">Childcare</SelectItem>
+                  <SelectItem value="daycare">Daycare</SelectItem>
+                  <SelectItem value="auto">Auto</SelectItem>
+                  <SelectItem value="tolls">Tolls</SelectItem>
+                  <SelectItem value="parking">Parking Tickets</SelectItem>
+                  <SelectItem value="beauty">Beauty/Personal Care</SelectItem>
+                  <SelectItem value="groceries">Groceries</SelectItem>
+                  <SelectItem value="medical">Medical/Healthcare</SelectItem>
+                  <SelectItem value="subscriptions">Subscriptions</SelectItem>
+                  <SelectItem value="home_maintenance">Home Maintenance</SelectItem>
+                  <SelectItem value="pest_control">Pest Control</SelectItem>
+                  <SelectItem value="lawn_care">Lawn Care</SelectItem>
+                  <SelectItem value="security">Home Security</SelectItem>
+                  <SelectItem value="hoa">HOA Fees</SelectItem>
+                  <SelectItem value="trash">Trash/Recycling</SelectItem>
+                  <SelectItem value="water">Water/Sewer</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
                 </SelectContent>
               </Select>
             </div>
