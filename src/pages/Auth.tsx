@@ -940,20 +940,55 @@ export default function AuthPage() {
                     <span className="font-semibold text-foreground">${currentPlan?.price}/month</span>
                   </div>
                   <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Installment</span>
+                    <span className="font-semibold text-foreground">${((currentPlan?.price || 0) / 4).toFixed(2)} x 4</span>
+                  </div>
+                  <div className="flex items-center justify-between">
                     <span className="text-muted-foreground">Access Limit</span>
                     <span className="font-semibold text-accent">${currentPlan?.maxAccess.toLocaleString()}</span>
                   </div>
                   <hr className="border-border" />
                   <div className="flex items-center justify-between text-lg">
-                    <span className="font-semibold text-foreground">First 2 Months Total</span>
-                    <span className="font-bold text-accent">${(currentPlan?.price || 0) * 2}</span>
+                    <span className="font-semibold text-foreground">Total Dues Today</span>
+                    <span className="font-bold text-accent">${((currentPlan?.price || 0) / 2).toFixed(2)}</span>
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-accent/30 bg-accent/5 p-4">
-                  <p className="text-sm text-muted-foreground">
-                    <strong className="text-foreground">Why 2 months upfront?</strong> This ensures your account is active and ready to use immediately. Your next billing will be in 60 days.
-                  </p>
+                {/* Installment Breakdown */}
+                <div className="rounded-xl border border-border bg-secondary/30 p-4 space-y-3">
+                  <p className="text-sm font-semibold text-foreground">Payment Schedule</p>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="h-4 w-4 text-accent" />
+                        <span className="text-foreground">Installment 1</span>
+                        <Badge variant="accent" className="text-xs">Due Today</Badge>
+                      </div>
+                      <span className="font-medium text-foreground">${((currentPlan?.price || 0) / 4).toFixed(2)}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="h-4 w-4 text-accent" />
+                        <span className="text-foreground">Installment 2</span>
+                        <Badge variant="accent" className="text-xs">Due Today</Badge>
+                      </div>
+                      <span className="font-medium text-foreground">${((currentPlan?.price || 0) / 4).toFixed(2)}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-2">
+                        <div className="h-4 w-4 rounded-full border-2 border-muted-foreground/30" />
+                        <span className="text-muted-foreground">Installment 3</span>
+                      </div>
+                      <span className="font-medium text-muted-foreground">${((currentPlan?.price || 0) / 4).toFixed(2)}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-2">
+                        <div className="h-4 w-4 rounded-full border-2 border-muted-foreground/30" />
+                        <span className="text-muted-foreground">Installment 4</span>
+                      </div>
+                      <span className="font-medium text-muted-foreground">${((currentPlan?.price || 0) / 4).toFixed(2)}</span>
+                    </div>
+                  </div>
                 </div>
                 
                 <Button
@@ -970,7 +1005,7 @@ export default function AuthPage() {
                     </>
                   ) : (
                     <>
-                      Pay ${(currentPlan?.price || 0) * 2} & Activate
+                      Pay ${((currentPlan?.price || 0) / 2).toFixed(2)} & Activate
                       <CheckCircle2 className="h-5 w-5 ml-2" />
                     </>
                   )}
