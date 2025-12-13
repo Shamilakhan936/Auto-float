@@ -32,7 +32,13 @@ export function Hero() {
                 <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
               </Button>
             </Link>
-            <Button variant="outline" size="xl">
+            <Button 
+              variant="outline" 
+              size="xl"
+              onClick={() => {
+                document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' });
+              }}
+            >
               Learn More
             </Button>
           </div>
