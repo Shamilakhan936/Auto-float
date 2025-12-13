@@ -154,7 +154,7 @@ export default function VerifyPage() {
                 </div>
                 <div className="rounded-xl border border-border bg-card p-4 text-center">
                   <CheckCircle2 className="h-6 w-6 text-accent mx-auto mb-2" />
-                  <p className="text-sm font-medium text-foreground">Auto+ Badge</p>
+                  <p className="text-sm font-medium text-foreground">AutoFloat Badge</p>
                 </div>
               </div>
               
@@ -323,8 +323,8 @@ export default function VerifyPage() {
                       <div className="flex items-start gap-3 p-4 rounded-xl border border-warning/30 bg-warning/5">
                         <AlertCircle className="h-5 w-5 text-warning flex-shrink-0 mt-0.5" />
                         <p className="text-sm text-muted-foreground">
-                          By continuing, you confirm that you are the registered owner of this vehicle 
-                          and authorize Auto+ to verify your ownership status.
+                        By continuing, you confirm that you are the registered owner of this vehicle 
+                        and authorize AutoFloat to verify your ownership status.
                         </p>
                       </div>
                       
@@ -405,7 +405,7 @@ export default function VerifyPage() {
                     <CardContent className="text-center space-y-6">
                       <Badge variant="verified" className="text-sm py-2 px-4">
                         <Car className="h-4 w-4 mr-2" />
-                        Auto+ Verified
+                        AutoFloat Verified
                       </Badge>
                       
                       <div className="rounded-xl border border-accent/30 bg-accent/5 p-6">

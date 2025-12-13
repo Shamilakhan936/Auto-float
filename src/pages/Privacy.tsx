@@ -63,7 +63,7 @@ export default function PrivacyPage() {
                 <h2 className="text-xl font-semibold text-foreground mb-4">6. Contact Us</h2>
                 <p>
                   If you have questions about this Privacy Policy, please contact us at 
-                  privacy@autoplus.com or call 1-800-AUTO-PLUS.
+                  privacy@autofloat.com or call 1-800-AUTO-FLOAT.
                 </p>
               </section>
             </div>

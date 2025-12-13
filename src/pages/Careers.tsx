@@ -65,7 +65,7 @@ export default function CareersPage() {
             <div className="mx-auto max-w-3xl text-center">
               <Badge variant="accent" className="mb-4">We're Hiring</Badge>
               <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl md:text-5xl mb-6">
-                Join the Auto+ Team
+                Join the AutoFloat Team
               </h1>
               <p className="text-lg text-muted-foreground">
                 Help us build the future of bill management. We're looking for passionate 
