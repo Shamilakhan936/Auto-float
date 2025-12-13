@@ -35,7 +35,7 @@ export function Footer() {
               <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent">
                 <Car className="h-5 w-5 text-accent-foreground" />
               </div>
-              <span className="text-xl font-bold text-foreground">Auto+</span>
+              <span className="text-xl font-bold text-foreground">AutoFloat</span>
             </Link>
             <p className="text-sm text-muted-foreground max-w-xs">
               Predictable bill coverage with zero interest and zero penalties.
@@ -98,7 +98,7 @@ export function Footer() {
         
         <div className="mt-12 pt-8 border-t border-border flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} Auto+. All rights reserved.
+            © {new Date().getFullYear()} AutoFloat. All rights reserved.
           </p>
           <p className="text-sm text-muted-foreground">
             No interest, ever. No late fees. No lien on vehicle.

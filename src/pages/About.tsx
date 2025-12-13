@@ -41,7 +41,7 @@ export default function AboutPage() {
                 Making bill payments predictable and stress-free
               </h1>
               <p className="text-lg text-muted-foreground">
-                Auto+ was founded with a simple mission: help people manage their recurring expenses 
+                AutoFloat was founded with a simple mission: help people manage their recurring expenses 
                 without the anxiety of unexpected costs or predatory interest rates.
               </p>
             </div>
@@ -55,7 +55,7 @@ export default function AboutPage() {
               <h2 className="text-2xl font-bold text-foreground mb-6">Our Story</h2>
               <div className="prose prose-lg text-muted-foreground space-y-4">
                 <p>
-                  We started Auto+ after experiencing firsthand the challenges of managing multiple 
+                  We started AutoFloat after experiencing firsthand the challenges of managing multiple 
                   bills with varying due dates, amounts, and payment methods. Traditional credit 
                   options came with high interest rates and hidden fees that made things worse, not better.
                 </p>
@@ -65,7 +65,7 @@ export default function AboutPage() {
                   or penalties.
                 </p>
                 <p>
-                  Today, Auto+ serves thousands of customers who trust us to help them stay on top of 
+                  Today, AutoFloat serves thousands of customers who trust us to help them stay on top of 
                   their essential expenses. Our auto verification feature unlocks even higher access 
                   limits without putting a lien on your vehicle.
                 </p>

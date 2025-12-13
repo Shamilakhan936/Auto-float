@@ -35,7 +35,7 @@ const plans = [
     popular: true,
   },
   {
-    name: "Auto+",
+    name: "AutoFloat",
     tier: "auto_plus" as const,
     icon: Car,
     price: 75,

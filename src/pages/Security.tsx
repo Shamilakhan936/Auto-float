@@ -108,7 +108,7 @@ export default function SecurityPage() {
               <p className="text-muted-foreground mb-4">
                 Found a vulnerability? We appreciate responsible disclosure.
               </p>
-              <p className="font-medium text-accent">security@autoplus.com</p>
+              <p className="font-medium text-accent">security@autofloat.com</p>
             </div>
           </div>
         </section>

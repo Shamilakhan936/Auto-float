@@ -20,7 +20,7 @@ export default function TermsPage() {
               <section>
                 <h2 className="text-xl font-semibold text-foreground mb-4">1. Acceptance of Terms</h2>
                 <p>
-                  By accessing or using Auto+ services, you agree to be bound by these Terms of 
+                  By accessing or using AutoFloat services, you agree to be bound by these Terms of 
                   Service. If you do not agree to these terms, you may not use our services.
                 </p>
               </section>
@@ -28,7 +28,7 @@ export default function TermsPage() {
               <section>
                 <h2 className="text-xl font-semibold text-foreground mb-4">2. Description of Service</h2>
                 <p>
-                  Auto+ provides a subscription-based bill coverage service that allows users to 
+                  AutoFloat provides a subscription-based bill coverage service that allows users to 
                   pay approved bills up to their tier limit. Access is not cash or credit; it is 
                   restricted to specific bill categories.
                 </p>
@@ -46,7 +46,7 @@ export default function TermsPage() {
               <section>
                 <h2 className="text-xl font-semibold text-foreground mb-4">4. Auto-Settlement</h2>
                 <p>
-                  By using Auto+, you authorize us to automatically debit your connected bank 
+                  By using AutoFloat, you authorize us to automatically debit your connected bank 
                   account on your chosen settlement date. If settlement fails, your access will 
                   be paused until the balance is cleared. No late fees or penalties apply.
                 </p>
@@ -72,7 +72,7 @@ export default function TermsPage() {
               <section>
                 <h2 className="text-xl font-semibold text-foreground mb-4">7. Limitation of Liability</h2>
                 <p>
-                  Auto+ is provided "as is" without warranties of any kind. We are not liable 
+                  AutoFloat is provided "as is" without warranties of any kind. We are not liable 
                   for any indirect, incidental, or consequential damages arising from your use 
                   of our services.
                 </p>
@@ -81,7 +81,7 @@ export default function TermsPage() {
               <section>
                 <h2 className="text-xl font-semibold text-foreground mb-4">8. Contact</h2>
                 <p>
-                  Questions about these Terms should be directed to legal@autoplus.com.
+                  Questions about these Terms should be directed to legal@autofloat.com.
                 </p>
               </section>
             </div>

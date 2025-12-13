@@ -31,7 +31,7 @@ const blogPosts = [
   },
   {
     id: 4,
-    title: "How Auto+ is Different from Traditional Credit",
+    title: "How AutoFloat is Different from Traditional Credit",
     excerpt: "A deep dive into why subscription-based bill coverage is a smarter choice.",
     date: "November 18, 2024",
     readTime: "7 min read",
@@ -47,7 +47,7 @@ const blogPosts = [
   },
   {
     id: 6,
-    title: "Meet the Team: Engineering at Auto+",
+    title: "Meet the Team: Engineering at AutoFloat",
     excerpt: "Get to know the people building the future of bill management.",
     date: "November 3, 2024",
     readTime: "4 min read",

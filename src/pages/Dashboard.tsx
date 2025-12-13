@@ -53,7 +53,7 @@ const tierLimits = {
 const tierNames = {
   basic: "Basic",
   plus: "Plus",
-  auto_plus: "Auto+",
+  auto_plus: "AutoFloat",
 };
 
 interface Bill {
@@ -426,7 +426,7 @@ export default function DashboardPage() {
               {isVerified && (
                 <Badge variant="verified" className="py-2 px-4">
                   <Car className="h-4 w-4 mr-2" />
-                  Auto+ Verified
+                  AutoFloat Verified
                 </Badge>
               )}
               <Button variant="accent" onClick={() => setAddBillOpen(true)}>
@@ -694,7 +694,7 @@ export default function DashboardPage() {
                     Refer a Friend, Get $5
                   </h3>
                   <p className="text-muted-foreground">
-                    Share Auto+ with friends and earn $5 for each successful referral. Your friend gets $5 too!
+                    Share AutoFloat with friends and earn $5 for each successful referral. Your friend gets $5 too!
                   </p>
                 </div>
                 <div className="flex flex-col sm:flex-row items-center gap-3 shrink-0">
@@ -950,7 +950,7 @@ export default function DashboardPage() {
                   <div className="rounded-xl border border-accent/30 bg-accent/5 p-4 text-center">
                     <Badge variant="verified" className="mb-2">
                       <Car className="h-3 w-3 mr-1" />
-                      Auto+ Verified
+                      AutoFloat Verified
                     </Badge>
                     <p className="text-sm text-muted-foreground">
                       You have access to the maximum $3,000 monthly limit

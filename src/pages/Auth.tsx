@@ -70,7 +70,7 @@ const plans = [
     popular: true,
   },
   {
-    name: "Auto+",
+    name: "AutoFloat",
     tier: "auto_plus" as const,
     icon: Car,
     price: 75,
@@ -450,7 +450,7 @@ export default function AuthPage() {
                 <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-accent">
                   <Car className="h-6 w-6 text-accent-foreground" />
                 </div>
-                <span className="text-2xl font-bold text-foreground">Auto+</span>
+                <span className="text-2xl font-bold text-foreground">AutoFloat</span>
               </Link>
             </div>
             
@@ -555,7 +555,7 @@ export default function AuthPage() {
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent">
                 <Car className="h-5 w-5 text-accent-foreground" />
               </div>
-              <span className="text-xl font-bold text-foreground">Auto+</span>
+              <span className="text-xl font-bold text-foreground">AutoFloat</span>
             </Link>
           </div>
 
@@ -605,7 +605,7 @@ export default function AuthPage() {
                 <Badge variant="accent" className="w-fit mx-auto mb-2">
                   Create Account
                 </Badge>
-                <CardTitle className="text-2xl">Get started with Auto+</CardTitle>
+                <CardTitle className="text-2xl">Get started with AutoFloat</CardTitle>
                 <CardDescription>
                   Create your account to start managing your bills
                 </CardDescription>
