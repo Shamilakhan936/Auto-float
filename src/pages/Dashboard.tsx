@@ -121,6 +121,7 @@ export default function DashboardPage() {
   const [bankAccount, setBankAccount] = useState<BankAccount | null>(null);
   const [paymentPlans, setPaymentPlans] = useState<PaymentPlan[]>([]);
   const [installments, setInstallments] = useState<PaymentInstallment[]>([]);
+  const [referralCode, setReferralCode] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [addBillOpen, setAddBillOpen] = useState(false);
   const [manageBankOpen, setManageBankOpen] = useState(false);
@@ -215,6 +216,17 @@ export default function DashboardPage() {
       
       if (installmentsError) throw installmentsError;
       setInstallments((installmentsData as PaymentInstallment[]) || []);
+
+      // Fetch profile for referral code
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("referral_code")
+        .eq("user_id", user!.id)
+        .maybeSingle();
+      
+      if (profileData?.referral_code) {
+        setReferralCode(profileData.referral_code);
+      }
 
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -700,14 +712,15 @@ export default function DashboardPage() {
                 <div className="flex flex-col sm:flex-row items-center gap-3 shrink-0">
                   <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary border border-border">
                     <span className="text-sm font-mono text-foreground">
-                      REF-{user?.id?.slice(0, 8).toUpperCase()}
+                      {referralCode || `REF-${user?.id?.slice(0, 8).toUpperCase()}`}
                     </span>
                     <Button 
                       variant="ghost" 
                       size="sm" 
                       className="h-8 w-8 p-0"
                       onClick={() => {
-                        navigator.clipboard.writeText(`REF-${user?.id?.slice(0, 8).toUpperCase()}`);
+                        const code = referralCode || `REF-${user?.id?.slice(0, 8).toUpperCase()}`;
+                        navigator.clipboard.writeText(code);
                         toast({
                           title: "Copied!",
                           description: "Referral code copied to clipboard",
@@ -726,8 +739,9 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
           
+          
           {/* Quick Actions */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-8">
             <Card 
               className="hover:border-accent/30 transition-colors cursor-pointer animate-fade-in [animation-delay:300ms] opacity-0"
               onClick={() => setAddBillOpen(true)}
@@ -762,6 +776,15 @@ export default function DashboardPage() {
                 </p>
               </CardContent>
             </Card>
+            <Link to="/settings">
+              <Card className="hover:border-accent/30 transition-colors cursor-pointer h-full animate-fade-in [animation-delay:550ms] opacity-0">
+                <CardContent className="flex flex-col items-center justify-center py-6 text-center">
+                  <Shield className="h-8 w-8 text-accent mb-3" />
+                  <p className="font-medium text-foreground">Settings</p>
+                  <p className="text-xs text-muted-foreground">Manage account</p>
+                </CardContent>
+              </Card>
+            </Link>
             <Link to="/plans">
               <Card className="hover:border-accent/30 transition-colors cursor-pointer h-full animate-fade-in [animation-delay:600ms] opacity-0">
                 <CardContent className="flex flex-col items-center justify-center py-6 text-center">

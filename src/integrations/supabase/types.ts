@@ -183,30 +183,75 @@ export type Database = {
       profiles: {
         Row: {
           created_at: string
+          documents_verified: boolean | null
+          drivers_license_url: string | null
           email: string | null
           first_name: string | null
           id: string
           last_name: string | null
+          paystub_url: string | null
+          referral_code: string | null
+          referred_by: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           created_at?: string
+          documents_verified?: boolean | null
+          drivers_license_url?: string | null
           email?: string | null
           first_name?: string | null
           id?: string
           last_name?: string | null
+          paystub_url?: string | null
+          referral_code?: string | null
+          referred_by?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
           created_at?: string
+          documents_verified?: boolean | null
+          drivers_license_url?: string | null
           email?: string | null
           first_name?: string | null
           id?: string
           last_name?: string | null
+          paystub_url?: string | null
+          referral_code?: string | null
+          referred_by?: string | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      referrals: {
+        Row: {
+          created_at: string
+          id: string
+          referral_code: string
+          referred_id: string
+          referrer_id: string
+          reward_amount: number
+          reward_paid: boolean
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          referral_code: string
+          referred_id: string
+          referrer_id: string
+          reward_amount?: number
+          reward_paid?: boolean
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          referral_code?: string
+          referred_id?: string
+          referrer_id?: string
+          reward_amount?: number
+          reward_paid?: boolean
         }
         Relationships: []
       }
@@ -218,6 +263,7 @@ export type Database = {
           id: string
           is_active: boolean
           next_settlement_date: string | null
+          settlement_frequency: string | null
           settlement_timing: string | null
           tier: Database["public"]["Enums"]["subscription_tier"]
           updated_at: string
@@ -230,6 +276,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           next_settlement_date?: string | null
+          settlement_frequency?: string | null
           settlement_timing?: string | null
           tier?: Database["public"]["Enums"]["subscription_tier"]
           updated_at?: string
@@ -242,6 +289,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           next_settlement_date?: string | null
+          settlement_frequency?: string | null
           settlement_timing?: string | null
           tier?: Database["public"]["Enums"]["subscription_tier"]
           updated_at?: string

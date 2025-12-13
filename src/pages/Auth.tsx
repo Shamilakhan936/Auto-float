@@ -263,6 +263,17 @@ export default function AuthPage() {
         .upload(psPath, paystubFile);
       
       if (psError) throw psError;
+
+      // Update profile with document paths
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .update({
+          drivers_license_url: dlPath,
+          paystub_url: psPath,
+        })
+        .eq("user_id", userId);
+
+      if (profileError) console.error("Profile update error:", profileError);
       
       toast({
         title: "Identity verified!",
