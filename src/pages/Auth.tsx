@@ -291,47 +291,50 @@ export default function AuthPage() {
   };
 
   const handleBankConnection = async () => {
-    if (!userId || !selectedBank || !settlementTiming) return;
+    if (!userId) return;
     setIsLoading(true);
 
     try {
-      const bankName = banks.find(b => b.id === selectedBank)?.name || "Bank";
-      
-      // Insert bank account
-      const { error: bankError } = await supabase.from("bank_accounts").upsert({
-        user_id: userId,
-        bank_name: bankName,
-        account_last_four: "4567",
-        is_primary: true,
-        is_connected: true,
-      }, { onConflict: "user_id,is_primary" });
+      // Only insert bank if user selected one
+      if (selectedBank) {
+        const bankName = banks.find(b => b.id === selectedBank)?.name || "Bank";
+        
+        const { error: bankError } = await supabase.from("bank_accounts").insert({
+          user_id: userId,
+          bank_name: bankName,
+          account_last_four: "4567",
+          is_primary: true,
+          is_connected: true,
+        });
 
-      if (bankError) throw bankError;
+        if (bankError) console.error("Bank insert error:", bankError);
+      }
 
-      // Update subscription with settlement timing
-      const nextSettlement = addDays(new Date(), 30);
-      const { error: subError } = await supabase
-        .from("subscriptions")
-        .update({ 
-          settlement_timing: settlementTiming,
-          next_settlement_date: nextSettlement.toISOString().split("T")[0],
-          is_active: true,
-        })
-        .eq("user_id", userId);
+      // Update subscription with settlement timing if selected
+      if (settlementTiming) {
+        const nextSettlement = addDays(new Date(), 30);
+        const { error: subError } = await supabase
+          .from("subscriptions")
+          .update({ 
+            settlement_timing: settlementTiming,
+            next_settlement_date: nextSettlement.toISOString().split("T")[0],
+            is_active: true,
+          })
+          .eq("user_id", userId);
 
-      if (subError) throw subError;
+        if (subError) console.error("Subscription update error:", subError);
+      }
 
       setSignupStep("payment");
     } catch (error) {
       console.error("Error connecting bank:", error);
-      toast({
-        title: "Error",
-        description: "Failed to connect bank. Please try again.",
-        variant: "destructive",
-      });
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const skipBankConnection = () => {
+    setSignupStep("payment");
   };
 
   const handlePayment = async () => {
@@ -879,24 +882,34 @@ export default function AuthPage() {
                   </div>
                 </div>
                 
-                <Button
-                  variant="accent"
-                  className="w-full"
-                  onClick={handleBankConnection}
-                  disabled={isLoading || !selectedBank || !settlementTiming}
-                >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                      Connecting...
-                    </>
-                  ) : (
-                    <>
-                      Connect Bank
-                      <ArrowRight className="h-4 w-4 ml-2" />
-                    </>
-                  )}
-                </Button>
+                <div className="flex gap-3">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={skipBankConnection}
+                    disabled={isLoading}
+                  >
+                    Skip for Now
+                  </Button>
+                  <Button
+                    variant="accent"
+                    className="flex-1"
+                    onClick={handleBankConnection}
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        Connecting...
+                      </>
+                    ) : (
+                      <>
+                        Continue
+                        <ArrowRight className="h-4 w-4 ml-2" />
+                      </>
+                    )}
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           )}
