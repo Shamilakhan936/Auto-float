@@ -235,61 +235,45 @@ export default function AuthPage() {
 
   const handleVehicleVerification = async () => {
     if (!userId) return;
-    
-    if (!verificationMethod || (!vin && !licensePlate)) {
-      toast({
-        title: "Vehicle info required",
-        description: "Please enter your VIN or license plate.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!insuranceProvider) {
-      toast({
-        title: "Insurance required",
-        description: "Please enter your insurance provider.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     setIsLoading(true);
 
     try {
-      // Insert vehicle with verification
-      const { error: vehicleError } = await supabase.from("vehicles").upsert({
-        user_id: userId,
-        vin: verificationMethod === "vin" ? vin : null,
-        license_plate: verificationMethod === "plate" ? licensePlate : null,
-        make: "Verified",
-        model: "Vehicle",
-        year: new Date().getFullYear(),
-        insurance_provider: insuranceProvider,
-        is_verified: true,
-        insurance_verified: true,
-        verified_at: new Date().toISOString(),
-      }, { onConflict: "user_id" });
+      // Only insert vehicle if user provided info
+      if (verificationMethod && (vin || licensePlate)) {
+        const { error: vehicleError } = await supabase.from("vehicles").insert({
+          user_id: userId,
+          vin: verificationMethod === "vin" ? vin : null,
+          license_plate: verificationMethod === "plate" ? licensePlate : null,
+          make: "Verified",
+          model: "Vehicle",
+          year: new Date().getFullYear(),
+          insurance_provider: insuranceProvider || null,
+          is_verified: true,
+          insurance_verified: !!insuranceProvider,
+          verified_at: new Date().toISOString(),
+        });
 
-      if (vehicleError) throw vehicleError;
+        if (vehicleError) throw vehicleError;
 
-      // Update subscription to auto_plus with higher limit
-      const { error: subError } = await supabase
-        .from("subscriptions")
-        .update({ 
-          tier: "auto_plus",
-          access_limit: 3000,
-        })
-        .eq("user_id", userId);
+        // Update subscription to auto_plus with higher limit
+        const { error: subError } = await supabase
+          .from("subscriptions")
+          .update({ 
+            tier: "auto_plus",
+            access_limit: 3000,
+          })
+          .eq("user_id", userId);
 
-      if (subError) throw subError;
+        if (subError) throw subError;
 
-      setSelectedPlan("auto_plus");
+        setSelectedPlan("auto_plus");
+        toast({
+          title: "Vehicle verified!",
+          description: "Your access limit has been increased to $3,000.",
+        });
+      }
+
       setSignupStep("bank");
-      toast({
-        title: "Vehicle verified!",
-        description: "Your access limit has been increased to $3,000.",
-      });
     } catch (error) {
       console.error("Error verifying vehicle:", error);
       toast({
@@ -300,6 +284,10 @@ export default function AuthPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const skipVehicleVerification = () => {
+    setSignupStep("bank");
   };
 
   const handleBankConnection = async () => {
@@ -798,24 +786,34 @@ export default function AuthPage() {
                   </div>
                 </div>
                 
-                <Button
-                  variant="accent"
-                  className="w-full"
-                  onClick={handleVehicleVerification}
-                  disabled={isLoading || !verificationMethod || (!vin && !licensePlate) || !insuranceProvider}
-                >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                      Verifying...
-                    </>
-                  ) : (
-                    <>
-                      Verify Vehicle & Insurance
-                      <ArrowRight className="h-4 w-4 ml-2" />
-                    </>
-                  )}
-                </Button>
+                <div className="flex gap-3">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={skipVehicleVerification}
+                    disabled={isLoading}
+                  >
+                    Skip for Now
+                  </Button>
+                  <Button
+                    variant="accent"
+                    className="flex-1"
+                    onClick={handleVehicleVerification}
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        Verifying...
+                      </>
+                    ) : (
+                      <>
+                        Continue
+                        <ArrowRight className="h-4 w-4 ml-2" />
+                      </>
+                    )}
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           )}
