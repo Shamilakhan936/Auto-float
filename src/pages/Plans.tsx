@@ -17,9 +17,10 @@ const plans = [
     tier: "basic" as const,
     icon: Zap,
     price: 15,
-    maxAccess: 500,
+    maxAccess: 200,
     description: "Essential bill coverage for everyday needs",
     categories: ["Utilities", "Phone", "Internet"],
+    features: ["Auto Verification", "Insurance Verification"],
     popular: false,
   },
   {
@@ -27,21 +28,22 @@ const plans = [
     tier: "plus" as const,
     icon: Crown,
     price: 25,
-    maxAccess: 1500,
+    maxAccess: 300,
     description: "Extended coverage for growing expenses",
     categories: ["Utilities", "Insurance", "Phone", "Internet"],
+    features: ["Auto Verification", "Insurance Verification"],
     popular: true,
   },
   {
     name: "Auto+",
     tier: "auto_plus" as const,
     icon: Car,
-    price: 40,
-    maxAccess: 3000,
+    price: 75,
+    maxAccess: 1000,
     description: "Maximum coverage with auto verification benefits",
     categories: ["Rent", "Utilities", "Insurance", "Auto bills", "Phone"],
+    features: ["Auto Verification", "Insurance Verification", "Priority Support"],
     popular: false,
-    hasAutoVerification: true,
   },
 ];
 
@@ -197,12 +199,12 @@ export default function PlansPage() {
                           {category}
                         </li>
                       ))}
-                      {plan.hasAutoVerification && (
-                        <li className="flex items-center gap-2 text-sm text-accent font-medium">
+                      {plan.features?.map((feature) => (
+                        <li key={feature} className="flex items-center gap-2 text-sm text-accent font-medium">
                           <Car className="h-4 w-4 flex-shrink-0" />
-                          Auto verification unlocks higher limits
+                          {feature}
                         </li>
-                      )}
+                      ))}
                     </ul>
                     
                     <Button
