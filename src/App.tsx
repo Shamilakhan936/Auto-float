@@ -10,6 +10,7 @@ import Verify from "./pages/Verify";
 import ConnectBank from "./pages/ConnectBank";
 import Dashboard from "./pages/Dashboard";
 import Auth from "./pages/Auth";
+import Settings from "./pages/Settings";
 import About from "./pages/About";
 import Careers from "./pages/Careers";
 import Press from "./pages/Press";
@@ -37,6 +38,7 @@ const App = () => (
             <Route path="/verify" element={<Verify />} />
             <Route path="/connect-bank" element={<ConnectBank />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/settings" element={<Settings />} />
             <Route path="/about" element={<About />} />
             <Route path="/careers" element={<Careers />} />
             <Route path="/press" element={<Press />} />
