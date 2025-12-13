@@ -45,6 +45,9 @@ interface Profile {
   last_name: string | null;
   email: string | null;
   referral_code: string | null;
+  drivers_license_url: string | null;
+  paystub_url: string | null;
+  documents_verified: boolean | null;
 }
 
 interface Subscription {
@@ -121,6 +124,7 @@ export default function SettingsPage() {
   const [newVehicleMake, setNewVehicleMake] = useState("");
   const [newVehicleModel, setNewVehicleModel] = useState("");
   const [newVehicleYear, setNewVehicleYear] = useState("");
+  const [newVehicleInsurance, setNewVehicleInsurance] = useState("");
 
   const [addBankOpen, setAddBankOpen] = useState(false);
   const [newBankName, setNewBankName] = useState("");
@@ -239,6 +243,28 @@ export default function SettingsPage() {
     }
   };
 
+  const handleUpdateSettlementTiming = async (timing: string) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from("subscriptions")
+        .update({ settlement_timing: timing })
+        .eq("user_id", user.id);
+
+      if (error) throw error;
+
+      toast({ title: "Settlement timing updated!" });
+      fetchData();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update settlement timing.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleAddVehicle = async () => {
     if (!user) return;
     setSaving(true);
@@ -251,6 +277,7 @@ export default function SettingsPage() {
         make: newVehicleMake || null,
         model: newVehicleModel || null,
         year: newVehicleYear ? parseInt(newVehicleYear) : null,
+        insurance_provider: newVehicleInsurance || null,
         is_verified: false,
       });
 
@@ -263,6 +290,7 @@ export default function SettingsPage() {
       setNewVehicleMake("");
       setNewVehicleModel("");
       setNewVehicleYear("");
+      setNewVehicleInsurance("");
       fetchData();
     } catch (error) {
       toast({
@@ -476,6 +504,64 @@ export default function SettingsPage() {
                 </CardContent>
               </Card>
 
+              {/* Document Verification */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Document Verification</CardTitle>
+                  <CardDescription>Your uploaded documents for verification</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center justify-between p-4 rounded-lg bg-secondary/30">
+                    <div className="flex items-center gap-3">
+                      <Shield className="h-5 w-5 text-muted-foreground" />
+                      <div>
+                        <p className="font-medium">Driver's License</p>
+                        <p className="text-sm text-muted-foreground">
+                          {profile?.drivers_license_url ? "Uploaded" : "Not uploaded"}
+                        </p>
+                      </div>
+                    </div>
+                    {profile?.drivers_license_url ? (
+                      <Badge variant="success">Uploaded</Badge>
+                    ) : (
+                      <Badge variant="outline">Missing</Badge>
+                    )}
+                  </div>
+                  <div className="flex items-center justify-between p-4 rounded-lg bg-secondary/30">
+                    <div className="flex items-center gap-3">
+                      <DollarSign className="h-5 w-5 text-muted-foreground" />
+                      <div>
+                        <p className="font-medium">Paystub</p>
+                        <p className="text-sm text-muted-foreground">
+                          {profile?.paystub_url ? "Uploaded" : "Not uploaded"}
+                        </p>
+                      </div>
+                    </div>
+                    {profile?.paystub_url ? (
+                      <Badge variant="success">Uploaded</Badge>
+                    ) : (
+                      <Badge variant="outline">Missing</Badge>
+                    )}
+                  </div>
+                  <div className="flex items-center justify-between p-4 rounded-lg border border-accent/30 bg-accent/5">
+                    <div className="flex items-center gap-3">
+                      <CheckCircle2 className="h-5 w-5 text-accent" />
+                      <div>
+                        <p className="font-medium">Verification Status</p>
+                        <p className="text-sm text-muted-foreground">
+                          {profile?.documents_verified ? "Your documents have been verified" : "Pending review"}
+                        </p>
+                      </div>
+                    </div>
+                    {profile?.documents_verified ? (
+                      <Badge variant="success">Verified</Badge>
+                    ) : (
+                      <Badge variant="warning">Pending</Badge>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
               <Card>
                 <CardHeader>
                   <CardTitle>Security</CardTitle>
@@ -557,23 +643,45 @@ export default function SettingsPage() {
 
                   <Separator />
 
-                  <div className="space-y-3">
-                    <Label>Settlement Frequency</Label>
-                    <Select
-                      value={subscription?.settlement_frequency || "bi-weekly"}
-                      onValueChange={handleUpdateSettlementFrequency}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select frequency" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="weekly">Weekly</SelectItem>
-                        <SelectItem value="bi-weekly">Bi-weekly</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <p className="text-xs text-muted-foreground">
-                      Choose when your balance is automatically settled via ACH.
-                    </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-3">
+                      <Label>Settlement Frequency</Label>
+                      <Select
+                        value={subscription?.settlement_frequency || "bi-weekly"}
+                        onValueChange={handleUpdateSettlementFrequency}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select frequency" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="weekly">Weekly</SelectItem>
+                          <SelectItem value="bi-weekly">Bi-weekly</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">
+                        How often your balance is settled via ACH.
+                      </p>
+                    </div>
+                    
+                    <div className="space-y-3">
+                      <Label>Settlement Timing</Label>
+                      <Select
+                        value={subscription?.settlement_timing || "month-end"}
+                        onValueChange={handleUpdateSettlementTiming}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select timing" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="month-end">Month End</SelectItem>
+                          <SelectItem value="mid-month">Mid Month (15th)</SelectItem>
+                          <SelectItem value="custom">Custom Date</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">
+                        When in the month your settlement occurs.
+                      </p>
+                    </div>
                   </div>
 
                   <Button variant="accent" className="w-full" onClick={() => navigate("/plans")}>
@@ -612,41 +720,67 @@ export default function SettingsPage() {
                       {vehicles.map((vehicle) => (
                         <div
                           key={vehicle.id}
-                          className="flex items-center justify-between p-4 rounded-lg border border-border"
+                          className="p-4 rounded-lg border border-border space-y-4"
                         >
-                          <div className="flex items-center gap-4">
-                            <div className="h-12 w-12 rounded-lg bg-secondary flex items-center justify-center">
-                              <Car className="h-6 w-6 text-foreground" />
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                              <div className="h-12 w-12 rounded-lg bg-secondary flex items-center justify-center">
+                                <Car className="h-6 w-6 text-foreground" />
+                              </div>
+                              <div>
+                                <p className="font-medium">
+                                  {vehicle.year} {vehicle.make} {vehicle.model}
+                                </p>
+                                <p className="text-sm text-muted-foreground">
+                                  {vehicle.license_plate || vehicle.vin || "No ID"}
+                                </p>
+                              </div>
                             </div>
-                            <div>
-                              <p className="font-medium">
-                                {vehicle.year} {vehicle.make} {vehicle.model}
-                              </p>
-                              <p className="text-sm text-muted-foreground">
-                                {vehicle.license_plate || vehicle.vin || "No ID"}
-                              </p>
+                            <div className="flex items-center gap-3">
+                              {vehicle.is_verified ? (
+                                <Badge variant="success" className="gap-1">
+                                  <CheckCircle2 className="h-3 w-3" />
+                                  Verified
+                                </Badge>
+                              ) : (
+                                <Badge variant="outline" className="gap-1">
+                                  <AlertCircle className="h-3 w-3" />
+                                  Pending
+                                </Badge>
+                              )}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-destructive"
+                                onClick={() => handleDeleteVehicle(vehicle.id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
                             </div>
                           </div>
-                          <div className="flex items-center gap-3">
-                            {vehicle.is_verified ? (
+                          
+                          {/* Insurance Status */}
+                          <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/30">
+                            <div className="flex items-center gap-3">
+                              <Shield className="h-5 w-5 text-muted-foreground" />
+                              <div>
+                                <p className="text-sm font-medium">Insurance</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {vehicle.insurance_provider || "Not provided"}
+                                </p>
+                              </div>
+                            </div>
+                            {vehicle.insurance_verified ? (
                               <Badge variant="success" className="gap-1">
                                 <CheckCircle2 className="h-3 w-3" />
                                 Verified
                               </Badge>
                             ) : (
-                              <Badge variant="outline" className="gap-1">
+                              <Badge variant="warning" className="gap-1">
                                 <AlertCircle className="h-3 w-3" />
-                                Pending
+                                Unverified
                               </Badge>
                             )}
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-destructive"
-                              onClick={() => handleDeleteVehicle(vehicle.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
                           </div>
                         </div>
                       ))}
@@ -900,6 +1034,23 @@ export default function SettingsPage() {
                 value={newVehiclePlate}
                 onChange={(e) => setNewVehiclePlate(e.target.value)}
               />
+            </div>
+            <div className="space-y-2">
+              <Label>Insurance Provider</Label>
+              <Select value={newVehicleInsurance} onValueChange={setNewVehicleInsurance}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select insurance provider" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="State Farm">State Farm</SelectItem>
+                  <SelectItem value="Geico">Geico</SelectItem>
+                  <SelectItem value="Progressive">Progressive</SelectItem>
+                  <SelectItem value="Allstate">Allstate</SelectItem>
+                  <SelectItem value="USAA">USAA</SelectItem>
+                  <SelectItem value="Liberty Mutual">Liberty Mutual</SelectItem>
+                  <SelectItem value="Other">Other</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <DialogFooter>
