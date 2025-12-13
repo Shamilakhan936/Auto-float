@@ -23,7 +23,10 @@ import {
   Upload,
   FileText,
   IdCard,
-  Receipt
+  Receipt,
+  MapPin,
+  Phone,
+  KeyRound
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -44,7 +47,7 @@ const signUpSchema = z.object({
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
-type SignupStep = "account" | "documents" | "plan" | "vehicle" | "bank" | "payment" | "complete";
+type SignupStep = "account" | "vehicle" | "identity" | "plan" | "bank" | "payment" | "complete";
 
 const plans = [
   {
@@ -113,7 +116,11 @@ export default function AuthPage() {
   const [selectedBank, setSelectedBank] = useState<string | null>(null);
   const [settlementTiming, setSettlementTiming] = useState<"payday" | "month-end" | null>(null);
   
-  // Document uploads
+  // Identity verification
+  const [fullName, setFullName] = useState("");
+  const [address, setAddress] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [ssn, setSsn] = useState("");
   const [driverLicenseFile, setDriverLicenseFile] = useState<File | null>(null);
   const [paystubFile, setPaystubFile] = useState<File | null>(null);
   const [uploadingDocs, setUploadingDocs] = useState(false);
@@ -199,10 +206,11 @@ export default function AuthPage() {
         }
       } else {
         setUserId(data?.user?.id || null);
-        setSignupStep("documents");
+        setFullName(`${firstName} ${lastName}`);
+        setSignupStep("vehicle");
         toast({
           title: "Account created!",
-          description: "Now let's verify your identity.",
+          description: "Now let's verify your vehicle.",
         });
       }
     } catch (err) {
@@ -216,8 +224,17 @@ export default function AuthPage() {
     }
   };
 
-  const handleDocumentUpload = async () => {
+  const handleIdentityVerification = async () => {
     if (!userId) return;
+    
+    if (!fullName.trim() || !address.trim() || !phoneNumber.trim() || !ssn.trim()) {
+      toast({
+        title: "All fields required",
+        description: "Please fill in all personal information fields.",
+        variant: "destructive",
+      });
+      return;
+    }
     
     if (!driverLicenseFile || !paystubFile) {
       toast({
@@ -248,8 +265,8 @@ export default function AuthPage() {
       if (psError) throw psError;
       
       toast({
-        title: "Documents uploaded!",
-        description: "Your identity has been verified.",
+        title: "Identity verified!",
+        description: "Your information has been saved.",
       });
       
       setSignupStep("plan");
@@ -336,7 +353,7 @@ export default function AuthPage() {
         });
       }
 
-      setSignupStep("bank");
+      setSignupStep("identity");
     } catch (error) {
       console.error("Error verifying vehicle:", error);
       toast({
@@ -350,7 +367,7 @@ export default function AuthPage() {
   };
 
   const skipVehicleVerification = () => {
-    setSignupStep("bank");
+    setSignupStep("identity");
   };
 
   const handleBankConnection = async () => {
@@ -421,9 +438,9 @@ export default function AuthPage() {
 
   const signupSteps = [
     { id: "account", label: "Account" },
-    { id: "documents", label: "Documents" },
-    { id: "plan", label: "Plan" },
     { id: "vehicle", label: "Vehicle" },
+    { id: "identity", label: "Identity" },
+    { id: "plan", label: "Plan" },
     { id: "bank", label: "Bank" },
     { id: "payment", label: "Payment" },
   ];
@@ -701,113 +718,179 @@ export default function AuthPage() {
             </Card>
           )}
 
-          {/* Step: Document Upload */}
-          {signupStep === "documents" && (
+          {/* Step: Identity Verification */}
+          {signupStep === "identity" && (
             <Card className="animate-scale-in">
               <CardHeader className="text-center">
                 <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-accent/10 text-accent">
-                  <FileText className="h-7 w-7" />
+                  <Shield className="h-7 w-7" />
                 </div>
                 <CardTitle className="text-2xl">Verify Your Identity</CardTitle>
                 <CardDescription>
-                  Upload your driver's license and a recent paystub
+                  Enter your personal information and upload required documents
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Driver's License Upload */}
+              <CardContent className="space-y-4">
+                {/* Personal Information */}
                 <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <IdCard className="h-5 w-5 text-accent" />
-                    <Label className="font-semibold">Driver's License</Label>
-                    <span className="text-xs text-destructive">*Required</span>
+                  <div className="space-y-2">
+                    <Label htmlFor="fullName">Full Legal Name</Label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="fullName"
+                        placeholder="John Michael Doe"
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        className="pl-10"
+                      />
+                    </div>
                   </div>
-                  <input
-                    type="file"
-                    ref={driverLicenseInputRef}
-                    accept="image/*,.pdf"
-                    onChange={(e) => setDriverLicenseFile(e.target.files?.[0] || null)}
-                    className="hidden"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => driverLicenseInputRef.current?.click()}
-                    className={cn(
-                      "w-full rounded-xl border-2 border-dashed p-6 text-center transition-all",
-                      driverLicenseFile
-                        ? "border-accent bg-accent/5"
-                        : "border-border hover:border-accent/30"
-                    )}
-                  >
-                    {driverLicenseFile ? (
-                      <div className="flex items-center justify-center gap-3">
-                        <CheckCircle2 className="h-5 w-5 text-accent" />
-                        <span className="text-sm font-medium text-foreground">{driverLicenseFile.name}</span>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="address">Home Address</Label>
+                    <div className="relative">
+                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="address"
+                        placeholder="123 Main St, City, State 12345"
+                        value={address}
+                        onChange={(e) => setAddress(e.target.value)}
+                        className="pl-10"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label htmlFor="phone">Phone Number</Label>
+                      <div className="relative">
+                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          id="phone"
+                          type="tel"
+                          placeholder="(555) 123-4567"
+                          value={phoneNumber}
+                          onChange={(e) => setPhoneNumber(e.target.value)}
+                          className="pl-10"
+                        />
                       </div>
-                    ) : (
-                      <div className="space-y-2">
-                        <Upload className="h-8 w-8 mx-auto text-muted-foreground" />
-                        <p className="text-sm text-muted-foreground">Click to upload your driver's license</p>
-                        <p className="text-xs text-muted-foreground">JPG, PNG or PDF</p>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="ssn">SSN (Last 4)</Label>
+                      <div className="relative">
+                        <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          id="ssn"
+                          type="password"
+                          placeholder="••••"
+                          maxLength={4}
+                          value={ssn}
+                          onChange={(e) => setSsn(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                          className="pl-10"
+                        />
                       </div>
-                    )}
-                  </button>
+                    </div>
+                  </div>
                 </div>
 
-                {/* Paystub Upload */}
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Receipt className="h-5 w-5 text-accent" />
-                    <Label className="font-semibold">Recent Paystub</Label>
-                    <span className="text-xs text-destructive">*Required</span>
+                <div className="border-t border-border pt-4">
+                  <p className="text-sm font-medium text-foreground mb-3">Upload Documents</p>
+                  
+                  {/* Driver's License Upload */}
+                  <div className="space-y-2 mb-3">
+                    <div className="flex items-center gap-2">
+                      <IdCard className="h-4 w-4 text-accent" />
+                      <Label className="text-sm">Driver's License</Label>
+                      <span className="text-xs text-destructive">*Required</span>
+                    </div>
+                    <input
+                      type="file"
+                      ref={driverLicenseInputRef}
+                      accept="image/*,.pdf"
+                      onChange={(e) => setDriverLicenseFile(e.target.files?.[0] || null)}
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => driverLicenseInputRef.current?.click()}
+                      className={cn(
+                        "w-full rounded-lg border-2 border-dashed p-4 text-center transition-all",
+                        driverLicenseFile
+                          ? "border-accent bg-accent/5"
+                          : "border-border hover:border-accent/30"
+                      )}
+                    >
+                      {driverLicenseFile ? (
+                        <div className="flex items-center justify-center gap-2">
+                          <CheckCircle2 className="h-4 w-4 text-accent" />
+                          <span className="text-sm font-medium text-foreground">{driverLicenseFile.name}</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-center gap-2">
+                          <Upload className="h-4 w-4 text-muted-foreground" />
+                          <p className="text-sm text-muted-foreground">Click to upload</p>
+                        </div>
+                      )}
+                    </button>
                   </div>
-                  <input
-                    type="file"
-                    ref={paystubInputRef}
-                    accept="image/*,.pdf"
-                    onChange={(e) => setPaystubFile(e.target.files?.[0] || null)}
-                    className="hidden"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => paystubInputRef.current?.click()}
-                    className={cn(
-                      "w-full rounded-xl border-2 border-dashed p-6 text-center transition-all",
-                      paystubFile
-                        ? "border-accent bg-accent/5"
-                        : "border-border hover:border-accent/30"
-                    )}
-                  >
-                    {paystubFile ? (
-                      <div className="flex items-center justify-center gap-3">
-                        <CheckCircle2 className="h-5 w-5 text-accent" />
-                        <span className="text-sm font-medium text-foreground">{paystubFile.name}</span>
-                      </div>
-                    ) : (
-                      <div className="space-y-2">
-                        <Upload className="h-8 w-8 mx-auto text-muted-foreground" />
-                        <p className="text-sm text-muted-foreground">Click to upload a recent paystub</p>
-                        <p className="text-xs text-muted-foreground">JPG, PNG or PDF</p>
-                      </div>
-                    )}
-                  </button>
+
+                  {/* Paystub Upload */}
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Receipt className="h-4 w-4 text-accent" />
+                      <Label className="text-sm">Recent Paystub</Label>
+                      <span className="text-xs text-destructive">*Required</span>
+                    </div>
+                    <input
+                      type="file"
+                      ref={paystubInputRef}
+                      accept="image/*,.pdf"
+                      onChange={(e) => setPaystubFile(e.target.files?.[0] || null)}
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => paystubInputRef.current?.click()}
+                      className={cn(
+                        "w-full rounded-lg border-2 border-dashed p-4 text-center transition-all",
+                        paystubFile
+                          ? "border-accent bg-accent/5"
+                          : "border-border hover:border-accent/30"
+                      )}
+                    >
+                      {paystubFile ? (
+                        <div className="flex items-center justify-center gap-2">
+                          <CheckCircle2 className="h-4 w-4 text-accent" />
+                          <span className="text-sm font-medium text-foreground">{paystubFile.name}</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-center gap-2">
+                          <Upload className="h-4 w-4 text-muted-foreground" />
+                          <p className="text-sm text-muted-foreground">Click to upload</p>
+                        </div>
+                      )}
+                    </button>
+                  </div>
                 </div>
 
-                <div className="bg-secondary/50 rounded-lg p-4">
+                <div className="bg-secondary/50 rounded-lg p-3">
                   <p className="text-xs text-muted-foreground text-center">
-                    Your documents are securely stored and encrypted. We use them to verify your identity and income.
+                    Your information is securely stored and encrypted. We use it to verify your identity.
                   </p>
                 </div>
                 
                 <Button
                   variant="accent"
                   className="w-full"
-                  onClick={handleDocumentUpload}
-                  disabled={uploadingDocs || !driverLicenseFile || !paystubFile}
+                  onClick={handleIdentityVerification}
+                  disabled={uploadingDocs || !fullName || !address || !phoneNumber || !ssn || !driverLicenseFile || !paystubFile}
                 >
                   {uploadingDocs ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Uploading...
+                      Verifying...
                     </>
                   ) : (
                     <>
