@@ -24,7 +24,10 @@ import {
   AlertCircle,
   Loader2,
   DollarSign,
-  Receipt
+  Receipt,
+  Users,
+  Gift,
+  Copy
 } from "lucide-react";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
@@ -468,10 +471,10 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
             
-            {/* Settlement Card */}
+            {/* Next Payment Card */}
             <Card className="animate-fade-in [animation-delay:100ms] opacity-0">
               <CardHeader className="pb-2">
-                <CardTitle className="text-lg">Next Settlement</CardTitle>
+                <CardTitle className="text-lg">Next Payment</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="flex items-center gap-3 mb-4">
@@ -492,7 +495,7 @@ export default function DashboardPage() {
                   </div>
                 </div>
                 <p className="mt-4 text-xs text-muted-foreground">
-                  Balance clears automatically via ACH on settlement date.
+                  Balance clears automatically via ACH on payment date.
                 </p>
               </CardContent>
             </Card>
@@ -559,71 +562,167 @@ export default function DashboardPage() {
             </Card>
           )}
           
-          {/* Upcoming Bills */}
-          <Card className="animate-fade-in [animation-delay:200ms] opacity-0">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Upcoming Bills</CardTitle>
-                  <CardDescription>Your scheduled and pending bill payments</CardDescription>
-                </div>
-                <Button variant="outline" size="sm" onClick={() => setAddBillOpen(true)}>
-                  Add Bill
-                  <Plus className="h-4 w-4 ml-2" />
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {bills.length === 0 ? (
-                <div className="text-center py-12">
-                  <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-secondary">
-                    <CreditCard className="h-8 w-8 text-muted-foreground" />
+          {/* Bills Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            {/* Upcoming Bills */}
+            <Card className="animate-fade-in [animation-delay:200ms] opacity-0">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Upcoming Bills</CardTitle>
+                    <CardDescription>Your scheduled and pending bill payments</CardDescription>
                   </div>
-                  <p className="text-muted-foreground mb-4">No bills added yet</p>
-                  <Button variant="accent" onClick={() => setAddBillOpen(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Your First Bill
+                  <Button variant="outline" size="sm" onClick={() => setAddBillOpen(true)}>
+                    Add Bill
+                    <Plus className="h-4 w-4 ml-2" />
                   </Button>
                 </div>
-              ) : (
-                <div className="space-y-4">
-                  {bills.map((bill) => {
-                    const IconComponent = categoryIcons[bill.category] || CreditCard;
-                    return (
-                      <div
-                        key={bill.id}
-                        className="flex items-center justify-between p-4 rounded-xl border border-border bg-card hover:bg-secondary/30 transition-colors"
-                      >
-                        <div className="flex items-center gap-4">
-                          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-secondary">
-                            <IconComponent className="h-6 w-6 text-foreground" />
+              </CardHeader>
+              <CardContent>
+                {bills.filter(b => b.status !== "paid").length === 0 ? (
+                  <div className="text-center py-12">
+                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-secondary">
+                      <CreditCard className="h-8 w-8 text-muted-foreground" />
+                    </div>
+                    <p className="text-muted-foreground mb-4">No upcoming bills</p>
+                    <Button variant="accent" onClick={() => setAddBillOpen(true)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Your First Bill
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {bills.filter(b => b.status !== "paid").map((bill) => {
+                      const IconComponent = categoryIcons[bill.category] || CreditCard;
+                      return (
+                        <div
+                          key={bill.id}
+                          className="flex items-center justify-between p-4 rounded-xl border border-border bg-card hover:bg-secondary/30 transition-colors"
+                        >
+                          <div className="flex items-center gap-4">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-secondary">
+                              <IconComponent className="h-6 w-6 text-foreground" />
+                            </div>
+                            <div>
+                              <p className="font-medium text-foreground">{bill.name}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {bill.category} • Due {format(new Date(bill.due_date), "MMM d")}
+                              </p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="font-medium text-foreground">{bill.name}</p>
-                            <p className="text-sm text-muted-foreground">
-                              {bill.category} • Due {format(new Date(bill.due_date), "MMM d")}
-                            </p>
+                          <div className="flex items-center gap-4">
+                            <p className="text-lg font-semibold text-foreground">${bill.amount}</p>
+                            <Badge variant="outline" className="gap-1">
+                              <Clock className="h-3 w-3" />
+                              {bill.status === "scheduled" ? "Scheduled" : "Pending"}
+                            </Badge>
                           </div>
                         </div>
-                        <div className="flex items-center gap-4">
-                          <p className="text-lg font-semibold text-foreground">${bill.amount}</p>
-                          {bill.status === "scheduled" || bill.status === "paid" ? (
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Paid Bills */}
+            <Card className="animate-fade-in [animation-delay:250ms] opacity-0">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Paid Bills</CardTitle>
+                    <CardDescription>Bills that have been completed</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {bills.filter(b => b.status === "paid").length === 0 ? (
+                  <div className="text-center py-12">
+                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-secondary">
+                      <CheckCircle2 className="h-8 w-8 text-muted-foreground" />
+                    </div>
+                    <p className="text-muted-foreground">No paid bills yet</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Bills will appear here once paid
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-4 max-h-80 overflow-y-auto">
+                    {bills.filter(b => b.status === "paid").map((bill) => {
+                      const IconComponent = categoryIcons[bill.category] || CreditCard;
+                      return (
+                        <div
+                          key={bill.id}
+                          className="flex items-center justify-between p-4 rounded-xl border border-border bg-card/50"
+                        >
+                          <div className="flex items-center gap-4">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-success/10">
+                              <IconComponent className="h-6 w-6 text-success" />
+                            </div>
+                            <div>
+                              <p className="font-medium text-foreground">{bill.name}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {bill.category} • {format(new Date(bill.due_date), "MMM d")}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <p className="text-lg font-semibold text-foreground">${bill.amount}</p>
                             <Badge variant="success" className="gap-1">
                               <CheckCircle2 className="h-3 w-3" />
-                              {bill.status === "paid" ? "Paid" : "Scheduled"}
+                              Paid
                             </Badge>
-                          ) : (
-                            <Badge variant="outline" className="gap-1">
-                              <AlertCircle className="h-3 w-3" />
-                              Pending
-                            </Badge>
-                          )}
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Referral Section */}
+          <Card className="mb-8 animate-fade-in [animation-delay:280ms] opacity-0 border-accent/30 bg-gradient-to-r from-accent/5 to-transparent">
+            <CardContent className="py-6">
+              <div className="flex flex-col md:flex-row items-center gap-6">
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-accent/10 shrink-0">
+                  <Gift className="h-8 w-8 text-accent" />
                 </div>
-              )}
+                <div className="flex-1 text-center md:text-left">
+                  <h3 className="text-xl font-bold text-foreground mb-1">
+                    Refer a Friend, Get $5
+                  </h3>
+                  <p className="text-muted-foreground">
+                    Share Auto+ with friends and earn $5 for each successful referral. Your friend gets $5 too!
+                  </p>
+                </div>
+                <div className="flex flex-col sm:flex-row items-center gap-3 shrink-0">
+                  <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary border border-border">
+                    <span className="text-sm font-mono text-foreground">
+                      REF-{user?.id?.slice(0, 8).toUpperCase()}
+                    </span>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-8 w-8 p-0"
+                      onClick={() => {
+                        navigator.clipboard.writeText(`REF-${user?.id?.slice(0, 8).toUpperCase()}`);
+                        toast({
+                          title: "Copied!",
+                          description: "Referral code copied to clipboard",
+                        });
+                      }}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <Button variant="accent">
+                    <Users className="h-4 w-4 mr-2" />
+                    Share Link
+                  </Button>
+                </div>
+              </div>
             </CardContent>
           </Card>
           
