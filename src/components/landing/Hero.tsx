@@ -10,7 +10,7 @@ export function Hero() {
       <div className="absolute inset-0 gradient-hero opacity-[0.03]" />
       <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-accent/5 to-transparent" />
       
-      <div className="container relative px-4 py-20 md:py-32 lg:py-40">
+      <div className="container relative px-4 py-12 md:py-20 lg:py-24">
         <div className="mx-auto max-w-4xl text-center">
           <Badge variant="accent" className="mb-6 animate-fade-in">
             No Interest • No Fees • No Lien
