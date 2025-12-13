@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -19,7 +19,11 @@ import {
   Zap,
   Crown,
   Building2,
-  Loader2
+  Loader2,
+  Upload,
+  FileText,
+  IdCard,
+  Receipt
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -40,7 +44,7 @@ const signUpSchema = z.object({
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
-type SignupStep = "account" | "plan" | "vehicle" | "bank" | "payment" | "complete";
+type SignupStep = "account" | "documents" | "plan" | "vehicle" | "bank" | "payment" | "complete";
 
 const plans = [
   {
@@ -108,6 +112,13 @@ export default function AuthPage() {
   // Bank connection
   const [selectedBank, setSelectedBank] = useState<string | null>(null);
   const [settlementTiming, setSettlementTiming] = useState<"payday" | "month-end" | null>(null);
+  
+  // Document uploads
+  const [driverLicenseFile, setDriverLicenseFile] = useState<File | null>(null);
+  const [paystubFile, setPaystubFile] = useState<File | null>(null);
+  const [uploadingDocs, setUploadingDocs] = useState(false);
+  const driverLicenseInputRef = useRef<HTMLInputElement>(null);
+  const paystubInputRef = useRef<HTMLInputElement>(null);
   
   const { signIn, signUp } = useAuth();
   const navigate = useNavigate();
@@ -188,10 +199,10 @@ export default function AuthPage() {
         }
       } else {
         setUserId(data?.user?.id || null);
-        setSignupStep("plan");
+        setSignupStep("documents");
         toast({
           title: "Account created!",
-          description: "Now let's set up your plan.",
+          description: "Now let's verify your identity.",
         });
       }
     } catch (err) {
@@ -202,6 +213,55 @@ export default function AuthPage() {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleDocumentUpload = async () => {
+    if (!userId) return;
+    
+    if (!driverLicenseFile || !paystubFile) {
+      toast({
+        title: "Documents required",
+        description: "Please upload both your driver's license and a recent paystub.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setUploadingDocs(true);
+    
+    try {
+      // Upload driver's license
+      const dlPath = `${userId}/drivers-license-${Date.now()}`;
+      const { error: dlError } = await supabase.storage
+        .from("user-documents")
+        .upload(dlPath, driverLicenseFile);
+      
+      if (dlError) throw dlError;
+      
+      // Upload paystub
+      const psPath = `${userId}/paystub-${Date.now()}`;
+      const { error: psError } = await supabase.storage
+        .from("user-documents")
+        .upload(psPath, paystubFile);
+      
+      if (psError) throw psError;
+      
+      toast({
+        title: "Documents uploaded!",
+        description: "Your identity has been verified.",
+      });
+      
+      setSignupStep("plan");
+    } catch (error) {
+      console.error("Error uploading documents:", error);
+      toast({
+        title: "Upload failed",
+        description: "Failed to upload documents. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setUploadingDocs(false);
     }
   };
 
@@ -361,6 +421,7 @@ export default function AuthPage() {
 
   const signupSteps = [
     { id: "account", label: "Account" },
+    { id: "documents", label: "Documents" },
     { id: "plan", label: "Plan" },
     { id: "vehicle", label: "Vehicle" },
     { id: "bank", label: "Bank" },
@@ -636,6 +697,125 @@ export default function AuthPage() {
                     </button>
                   </p>
                 </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Step: Document Upload */}
+          {signupStep === "documents" && (
+            <Card className="animate-scale-in">
+              <CardHeader className="text-center">
+                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-accent/10 text-accent">
+                  <FileText className="h-7 w-7" />
+                </div>
+                <CardTitle className="text-2xl">Verify Your Identity</CardTitle>
+                <CardDescription>
+                  Upload your driver's license and a recent paystub
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Driver's License Upload */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <IdCard className="h-5 w-5 text-accent" />
+                    <Label className="font-semibold">Driver's License</Label>
+                    <span className="text-xs text-destructive">*Required</span>
+                  </div>
+                  <input
+                    type="file"
+                    ref={driverLicenseInputRef}
+                    accept="image/*,.pdf"
+                    onChange={(e) => setDriverLicenseFile(e.target.files?.[0] || null)}
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => driverLicenseInputRef.current?.click()}
+                    className={cn(
+                      "w-full rounded-xl border-2 border-dashed p-6 text-center transition-all",
+                      driverLicenseFile
+                        ? "border-accent bg-accent/5"
+                        : "border-border hover:border-accent/30"
+                    )}
+                  >
+                    {driverLicenseFile ? (
+                      <div className="flex items-center justify-center gap-3">
+                        <CheckCircle2 className="h-5 w-5 text-accent" />
+                        <span className="text-sm font-medium text-foreground">{driverLicenseFile.name}</span>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <Upload className="h-8 w-8 mx-auto text-muted-foreground" />
+                        <p className="text-sm text-muted-foreground">Click to upload your driver's license</p>
+                        <p className="text-xs text-muted-foreground">JPG, PNG or PDF</p>
+                      </div>
+                    )}
+                  </button>
+                </div>
+
+                {/* Paystub Upload */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Receipt className="h-5 w-5 text-accent" />
+                    <Label className="font-semibold">Recent Paystub</Label>
+                    <span className="text-xs text-destructive">*Required</span>
+                  </div>
+                  <input
+                    type="file"
+                    ref={paystubInputRef}
+                    accept="image/*,.pdf"
+                    onChange={(e) => setPaystubFile(e.target.files?.[0] || null)}
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => paystubInputRef.current?.click()}
+                    className={cn(
+                      "w-full rounded-xl border-2 border-dashed p-6 text-center transition-all",
+                      paystubFile
+                        ? "border-accent bg-accent/5"
+                        : "border-border hover:border-accent/30"
+                    )}
+                  >
+                    {paystubFile ? (
+                      <div className="flex items-center justify-center gap-3">
+                        <CheckCircle2 className="h-5 w-5 text-accent" />
+                        <span className="text-sm font-medium text-foreground">{paystubFile.name}</span>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <Upload className="h-8 w-8 mx-auto text-muted-foreground" />
+                        <p className="text-sm text-muted-foreground">Click to upload a recent paystub</p>
+                        <p className="text-xs text-muted-foreground">JPG, PNG or PDF</p>
+                      </div>
+                    )}
+                  </button>
+                </div>
+
+                <div className="bg-secondary/50 rounded-lg p-4">
+                  <p className="text-xs text-muted-foreground text-center">
+                    Your documents are securely stored and encrypted. We use them to verify your identity and income.
+                  </p>
+                </div>
+                
+                <Button
+                  variant="accent"
+                  className="w-full"
+                  onClick={handleDocumentUpload}
+                  disabled={uploadingDocs || !driverLicenseFile || !paystubFile}
+                >
+                  {uploadingDocs ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Uploading...
+                    </>
+                  ) : (
+                    <>
+                      Continue
+                      <ArrowRight className="h-4 w-4 ml-2" />
+                    </>
+                  )}
+                </Button>
               </CardContent>
             </Card>
           )}
