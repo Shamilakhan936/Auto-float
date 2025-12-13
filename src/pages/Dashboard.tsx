@@ -70,6 +70,19 @@ interface Subscription {
 
 interface Vehicle {
   is_verified: boolean;
+  make: string | null;
+  model: string | null;
+  year: number | null;
+  insurance_provider: string | null;
+  insurance_verified: boolean;
+  vin: string | null;
+  license_plate: string | null;
+}
+
+interface BankAccount {
+  bank_name: string;
+  account_last_four: string | null;
+  is_connected: boolean;
 }
 
 export default function DashboardPage() {
@@ -79,8 +92,11 @@ export default function DashboardPage() {
   const [bills, setBills] = useState<Bill[]>([]);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [vehicle, setVehicle] = useState<Vehicle | null>(null);
+  const [bankAccount, setBankAccount] = useState<BankAccount | null>(null);
   const [loading, setLoading] = useState(true);
   const [addBillOpen, setAddBillOpen] = useState(false);
+  const [manageBankOpen, setManageBankOpen] = useState(false);
+  const [manageVehicleOpen, setManageVehicleOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   
   // New bill form
@@ -129,13 +145,26 @@ export default function DashboardPage() {
       // Fetch vehicle
       const { data: vehicleData, error: vehicleError } = await supabase
         .from("vehicles")
-        .select("is_verified")
+        .select("*")
         .eq("user_id", user!.id)
         .maybeSingle();
       
       if (vehicleError && vehicleError.code !== "PGRST116") throw vehicleError;
       if (vehicleData) {
         setVehicle(vehicleData as Vehicle);
+      }
+
+      // Fetch bank account
+      const { data: bankData, error: bankError } = await supabase
+        .from("bank_accounts")
+        .select("*")
+        .eq("user_id", user!.id)
+        .eq("is_primary", true)
+        .maybeSingle();
+      
+      if (bankError && bankError.code !== "PGRST116") throw bankError;
+      if (bankData) {
+        setBankAccount(bankData as BankAccount);
       }
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -415,24 +444,30 @@ export default function DashboardPage() {
                 <p className="text-xs text-muted-foreground">Schedule new payment</p>
               </CardContent>
             </Card>
-            <Link to="/connect-bank">
-              <Card className="hover:border-accent/30 transition-colors cursor-pointer h-full animate-fade-in [animation-delay:400ms] opacity-0">
-                <CardContent className="flex flex-col items-center justify-center py-6 text-center">
-                  <CreditCard className="h-8 w-8 text-accent mb-3" />
-                  <p className="font-medium text-foreground">Bank Account</p>
-                  <p className="text-xs text-muted-foreground">Manage connections</p>
-                </CardContent>
-              </Card>
-            </Link>
-            <Link to="/verify">
-              <Card className="hover:border-accent/30 transition-colors cursor-pointer h-full animate-fade-in [animation-delay:500ms] opacity-0">
-                <CardContent className="flex flex-col items-center justify-center py-6 text-center">
-                  <Car className="h-8 w-8 text-accent mb-3" />
-                  <p className="font-medium text-foreground">Vehicle Info</p>
-                  <p className="text-xs text-muted-foreground">Update verification</p>
-                </CardContent>
-              </Card>
-            </Link>
+            <Card 
+              className="hover:border-accent/30 transition-colors cursor-pointer animate-fade-in [animation-delay:400ms] opacity-0"
+              onClick={() => setManageBankOpen(true)}
+            >
+              <CardContent className="flex flex-col items-center justify-center py-6 text-center">
+                <CreditCard className="h-8 w-8 text-accent mb-3" />
+                <p className="font-medium text-foreground">Bank Account</p>
+                <p className="text-xs text-muted-foreground">
+                  {bankAccount ? bankAccount.bank_name : "Connect bank"}
+                </p>
+              </CardContent>
+            </Card>
+            <Card 
+              className="hover:border-accent/30 transition-colors cursor-pointer animate-fade-in [animation-delay:500ms] opacity-0"
+              onClick={() => setManageVehicleOpen(true)}
+            >
+              <CardContent className="flex flex-col items-center justify-center py-6 text-center">
+                <Car className="h-8 w-8 text-accent mb-3" />
+                <p className="font-medium text-foreground">Vehicle Info</p>
+                <p className="text-xs text-muted-foreground">
+                  {isVerified ? "Verified" : "Not verified"}
+                </p>
+              </CardContent>
+            </Card>
             <Link to="/plans">
               <Card className="hover:border-accent/30 transition-colors cursor-pointer h-full animate-fade-in [animation-delay:600ms] opacity-0">
                 <CardContent className="flex flex-col items-center justify-center py-6 text-center">
@@ -515,6 +550,140 @@ export default function DashboardPage() {
               </Button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Manage Bank Account Dialog */}
+      <Dialog open={manageBankOpen} onOpenChange={setManageBankOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Bank Account</DialogTitle>
+            <DialogDescription>
+              Manage your connected bank account for auto-settlement.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {bankAccount ? (
+              <div className="rounded-xl border border-border p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary">
+                      <CreditCard className="h-5 w-5 text-foreground" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-foreground">{bankAccount.bank_name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        ••••{bankAccount.account_last_four || "4567"}
+                      </p>
+                    </div>
+                  </div>
+                  <Badge variant={bankAccount.is_connected ? "success" : "outline"}>
+                    {bankAccount.is_connected ? "Connected" : "Disconnected"}
+                  </Badge>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-6">
+                <CreditCard className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+                <p className="text-muted-foreground">No bank account connected</p>
+              </div>
+            )}
+            <div className="flex gap-3">
+              <Button variant="outline" className="flex-1" onClick={() => setManageBankOpen(false)}>
+                Close
+              </Button>
+              <Link to="/connect-bank" className="flex-1">
+                <Button variant="accent" className="w-full">
+                  {bankAccount ? "Update Bank" : "Connect Bank"}
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Manage Vehicle Dialog */}
+      <Dialog open={manageVehicleOpen} onOpenChange={setManageVehicleOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Vehicle Information</DialogTitle>
+            <DialogDescription>
+              View and manage your vehicle verification status.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {vehicle ? (
+              <div className="space-y-4">
+                <div className="rounded-xl border border-border p-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary">
+                        <Car className="h-5 w-5 text-foreground" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-foreground">
+                          {vehicle.year} {vehicle.make} {vehicle.model}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {vehicle.vin ? `VIN: ${vehicle.vin.slice(0, 8)}...` : vehicle.license_plate ? `Plate: ${vehicle.license_plate}` : "Vehicle Info"}
+                        </p>
+                      </div>
+                    </div>
+                    <Badge variant={vehicle.is_verified ? "verified" : "outline"}>
+                      {vehicle.is_verified ? "Verified" : "Pending"}
+                    </Badge>
+                  </div>
+                  
+                  {vehicle.insurance_provider && (
+                    <div className="pt-3 border-t border-border">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Shield className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm text-muted-foreground">Insurance</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-foreground">{vehicle.insurance_provider}</span>
+                          <Badge variant={vehicle.insurance_verified ? "success" : "outline"} className="text-xs">
+                            {vehicle.insurance_verified ? "Verified" : "Pending"}
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
+                {vehicle.is_verified && (
+                  <div className="rounded-xl border border-accent/30 bg-accent/5 p-4 text-center">
+                    <Badge variant="verified" className="mb-2">
+                      <Car className="h-3 w-3 mr-1" />
+                      Auto+ Verified
+                    </Badge>
+                    <p className="text-sm text-muted-foreground">
+                      You have access to the maximum $3,000 monthly limit
+                    </p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-6">
+                <Car className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+                <p className="text-muted-foreground mb-2">No vehicle verified</p>
+                <p className="text-xs text-muted-foreground">
+                  Verify your vehicle to unlock up to $3,000 monthly access
+                </p>
+              </div>
+            )}
+            <div className="flex gap-3">
+              <Button variant="outline" className="flex-1" onClick={() => setManageVehicleOpen(false)}>
+                Close
+              </Button>
+              <Link to="/verify" className="flex-1">
+                <Button variant="accent" className="w-full">
+                  {vehicle?.is_verified ? "Update Vehicle" : "Verify Vehicle"}
+                </Button>
+              </Link>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
