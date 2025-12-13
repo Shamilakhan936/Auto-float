@@ -1,12 +1,16 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Building2, CheckCircle2, ArrowRight, Lock, Shield, AlertCircle } from "lucide-react";
+import { Building2, CheckCircle2, ArrowRight, Lock, Shield, AlertCircle, Loader2 } from "lucide-react";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
+import { addDays } from "date-fns";
 
 const banks = [
   { id: "chase", name: "Chase", logo: "🏦" },
@@ -20,10 +24,41 @@ const banks = [
 type Step = "connect" | "settlement" | "confirm" | "complete";
 
 export default function ConnectBankPage() {
+  const { user, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
   const [step, setStep] = useState<Step>("connect");
   const [selectedBank, setSelectedBank] = useState<string | null>(null);
   const [settlementTiming, setSettlementTiming] = useState<"payday" | "month-end" | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [existingBank, setExistingBank] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate("/auth");
+    }
+  }, [user, authLoading, navigate]);
+
+  useEffect(() => {
+    if (user) {
+      checkExistingBank();
+    }
+  }, [user]);
+
+  const checkExistingBank = async () => {
+    if (!user) return;
+    
+    const { data, error } = await supabase
+      .from("bank_accounts")
+      .select("bank_name")
+      .eq("user_id", user.id)
+      .eq("is_primary", true)
+      .maybeSingle();
+    
+    if (data) {
+      setExistingBank(data.bank_name);
+    }
+  };
 
   const handleConnect = () => {
     setIsConnecting(true);
@@ -33,9 +68,65 @@ export default function ConnectBankPage() {
     }, 2000);
   };
 
-  const handleActivate = () => {
-    setStep("complete");
+  const handleActivate = async () => {
+    if (!user || !selectedBank || !settlementTiming) return;
+
+    setSubmitting(true);
+    try {
+      const bankName = banks.find(b => b.id === selectedBank)?.name || "Bank";
+      
+      // Insert or update bank account
+      const { error: bankError } = await supabase.from("bank_accounts").upsert({
+        user_id: user.id,
+        bank_name: bankName,
+        account_last_four: "4567",
+        is_primary: true,
+        is_connected: true,
+      }, { onConflict: "user_id,is_primary" });
+
+      // Update subscription with settlement timing
+      const nextSettlement = addDays(new Date(), 30);
+      const { error: subError } = await supabase
+        .from("subscriptions")
+        .update({ 
+          settlement_timing: settlementTiming,
+          next_settlement_date: nextSettlement.toISOString().split("T")[0],
+          is_active: true,
+        })
+        .eq("user_id", user.id);
+
+      if (bankError) throw bankError;
+      if (subError) throw subError;
+
+      toast({
+        title: "Subscription activated!",
+        description: "Your Auto+ subscription is now active.",
+      });
+
+      setStep("complete");
+    } catch (error) {
+      console.error("Error activating subscription:", error);
+      toast({
+        title: "Error",
+        description: "Failed to activate subscription. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setSubmitting(false);
+    }
   };
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-accent" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -86,7 +177,9 @@ export default function ConnectBankPage() {
                 </div>
                 <CardTitle className="text-2xl">Connect Your Bank</CardTitle>
                 <CardDescription>
-                  Link your primary bank account for auto-settlement.
+                  {existingBank 
+                    ? `You have ${existingBank} connected. Select a different bank to update.`
+                    : "Link your primary bank account for auto-settlement."}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -122,8 +215,17 @@ export default function ConnectBankPage() {
                   onClick={handleConnect}
                   disabled={!selectedBank || isConnecting}
                 >
-                  {isConnecting ? "Connecting..." : "Connect Bank"}
-                  {!isConnecting && <ArrowRight className="h-4 w-4 ml-2" />}
+                  {isConnecting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      Connecting...
+                    </>
+                  ) : (
+                    <>
+                      Connect Bank
+                      <ArrowRight className="h-4 w-4 ml-2" />
+                    </>
+                  )}
                 </Button>
               </CardContent>
             </Card>
@@ -228,9 +330,24 @@ export default function ConnectBankPage() {
                   </p>
                 </div>
                 
-                <Button variant="accent" size="lg" className="w-full" onClick={handleActivate}>
-                  Activate Subscription
-                  <CheckCircle2 className="h-5 w-5 ml-2" />
+                <Button 
+                  variant="accent" 
+                  size="lg" 
+                  className="w-full" 
+                  onClick={handleActivate}
+                  disabled={submitting}
+                >
+                  {submitting ? (
+                    <>
+                      <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                      Activating...
+                    </>
+                  ) : (
+                    <>
+                      Activate Subscription
+                      <CheckCircle2 className="h-5 w-5 ml-2" />
+                    </>
+                  )}
                 </Button>
               </CardContent>
             </Card>

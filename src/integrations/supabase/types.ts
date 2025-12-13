@@ -14,7 +14,195 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      bank_accounts: {
+        Row: {
+          account_last_four: string | null
+          bank_name: string
+          created_at: string
+          id: string
+          is_connected: boolean
+          is_primary: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_last_four?: string | null
+          bank_name: string
+          created_at?: string
+          id?: string
+          is_connected?: boolean
+          is_primary?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_last_four?: string | null
+          bank_name?: string
+          created_at?: string
+          id?: string
+          is_connected?: boolean
+          is_primary?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      bills: {
+        Row: {
+          amount: number
+          category: string
+          created_at: string
+          due_date: string
+          id: string
+          name: string
+          paid_at: string | null
+          status: Database["public"]["Enums"]["bill_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          category: string
+          created_at?: string
+          due_date: string
+          id?: string
+          name: string
+          paid_at?: string | null
+          status?: Database["public"]["Enums"]["bill_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          category?: string
+          created_at?: string
+          due_date?: string
+          id?: string
+          name?: string
+          paid_at?: string | null
+          status?: Database["public"]["Enums"]["bill_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          first_name: string | null
+          id: string
+          last_name: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      subscriptions: {
+        Row: {
+          access_limit: number
+          access_used: number
+          created_at: string
+          id: string
+          is_active: boolean
+          next_settlement_date: string | null
+          settlement_timing: string | null
+          tier: Database["public"]["Enums"]["subscription_tier"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          access_limit?: number
+          access_used?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          next_settlement_date?: string | null
+          settlement_timing?: string | null
+          tier?: Database["public"]["Enums"]["subscription_tier"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          access_limit?: number
+          access_used?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          next_settlement_date?: string | null
+          settlement_timing?: string | null
+          tier?: Database["public"]["Enums"]["subscription_tier"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      vehicles: {
+        Row: {
+          created_at: string
+          id: string
+          insurance_provider: string | null
+          insurance_verified: boolean
+          is_verified: boolean
+          license_plate: string | null
+          make: string | null
+          model: string | null
+          updated_at: string
+          user_id: string
+          verified_at: string | null
+          vin: string | null
+          year: number | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          insurance_provider?: string | null
+          insurance_verified?: boolean
+          is_verified?: boolean
+          license_plate?: string | null
+          make?: string | null
+          model?: string | null
+          updated_at?: string
+          user_id: string
+          verified_at?: string | null
+          vin?: string | null
+          year?: number | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          insurance_provider?: string | null
+          insurance_verified?: boolean
+          is_verified?: boolean
+          license_plate?: string | null
+          make?: string | null
+          model?: string | null
+          updated_at?: string
+          user_id?: string
+          verified_at?: string | null
+          vin?: string | null
+          year?: number | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +211,8 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      bill_status: "pending" | "scheduled" | "paid" | "failed"
+      subscription_tier: "basic" | "plus" | "auto_plus"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +339,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      bill_status: ["pending", "scheduled", "paid", "failed"],
+      subscription_tier: ["basic", "plus", "auto_plus"],
+    },
   },
 } as const
