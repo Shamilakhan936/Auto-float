@@ -950,7 +950,7 @@ export default function AuthPage() {
                   <hr className="border-border" />
                   <div className="flex items-center justify-between text-lg">
                     <span className="font-semibold text-foreground">Total Dues Today</span>
-                    <span className="font-bold text-accent">${((currentPlan?.price || 0) / 2).toFixed(2)}</span>
+                    <span className="font-bold text-accent">${((currentPlan?.price || 0) + ((currentPlan?.price || 0) / 2)).toFixed(2)}</span>
                   </div>
                 </div>
 
@@ -1005,7 +1005,7 @@ export default function AuthPage() {
                     </>
                   ) : (
                     <>
-                      Pay ${((currentPlan?.price || 0) / 2).toFixed(2)} & Activate
+                      Pay ${((currentPlan?.price || 0) + ((currentPlan?.price || 0) / 2)).toFixed(2)} & Activate
                       <CheckCircle2 className="h-5 w-5 ml-2" />
                     </>
                   )}
