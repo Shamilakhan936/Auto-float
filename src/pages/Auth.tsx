@@ -47,7 +47,7 @@ const signUpSchema = z.object({
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
-type SignupStep = "account" | "vehicle" | "identity" | "plan" | "bank" | "payment" | "complete";
+type SignupStep = "account" | "verify" | "plan" | "setup" | "complete";
 
 const plans = [
   {
@@ -207,10 +207,10 @@ export default function AuthPage() {
       } else {
         setUserId(data?.user?.id || null);
         setFullName(`${firstName} ${lastName}`);
-        setSignupStep("vehicle");
+        setSignupStep("verify");
         toast({
           title: "Account created!",
-          description: "Now let's verify your vehicle.",
+          description: "Now let's verify your information.",
         });
       }
     } catch (err) {
@@ -300,7 +300,7 @@ export default function AuthPage() {
 
       if (error) throw error;
 
-      setSignupStep("vehicle");
+      setSignupStep("setup");
     } catch (error) {
       console.error("Error updating plan:", error);
       toast({
@@ -353,12 +353,12 @@ export default function AuthPage() {
         });
       }
 
-      setSignupStep("identity");
+      setSignupStep("plan");
     } catch (error) {
-      console.error("Error verifying vehicle:", error);
+      console.error("Error verifying:", error);
       toast({
         title: "Error",
-        description: "Failed to verify vehicle. Please try again.",
+        description: "Failed to verify. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -366,8 +366,8 @@ export default function AuthPage() {
     }
   };
 
-  const skipVehicleVerification = () => {
-    setSignupStep("identity");
+  const skipVerification = () => {
+    setSignupStep("plan");
   };
 
   const handleBankConnection = async () => {
@@ -405,31 +405,24 @@ export default function AuthPage() {
         if (subError) console.error("Subscription update error:", subError);
       }
 
-      setSignupStep("payment");
+      // Process payment
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      toast({
+        title: "Payment processed!",
+        description: "First two installments have been collected.",
+      });
+      
+      setSignupStep("complete");
     } catch (error) {
-      console.error("Error connecting bank:", error);
+      console.error("Error in setup:", error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const skipBankConnection = () => {
-    setSignupStep("payment");
-  };
-
-  const handlePayment = async () => {
-    setIsLoading(true);
-    
-    // Simulate payment processing for first two installments
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    toast({
-      title: "Payment processed!",
-      description: "First two installments have been collected.",
-    });
-    
+  const skipSetup = () => {
     setSignupStep("complete");
-    setIsLoading(false);
   };
 
   const goToDashboard = () => {
@@ -438,11 +431,9 @@ export default function AuthPage() {
 
   const signupSteps = [
     { id: "account", label: "Account" },
-    { id: "vehicle", label: "Vehicle" },
-    { id: "identity", label: "Identity" },
+    { id: "verify", label: "Verify" },
     { id: "plan", label: "Plan" },
-    { id: "bank", label: "Bank" },
-    { id: "payment", label: "Payment" },
+    { id: "setup", label: "Setup" },
   ];
 
   const currentStepIndex = signupSteps.findIndex(s => s.id === signupStep);
@@ -718,187 +709,219 @@ export default function AuthPage() {
             </Card>
           )}
 
-          {/* Step: Identity Verification */}
-          {signupStep === "identity" && (
+          {/* Step: Verify (Vehicle + Identity Combined) */}
+          {signupStep === "verify" && (
             <Card className="animate-scale-in">
-              <CardHeader className="text-center">
-                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-accent/10 text-accent">
-                  <Shield className="h-7 w-7" />
+              <CardHeader className="text-center pb-4">
+                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-accent/10 text-accent">
+                  <Shield className="h-6 w-6" />
                 </div>
-                <CardTitle className="text-2xl">Verify Your Identity</CardTitle>
-                <CardDescription>
-                  Enter your personal information and upload required documents
+                <CardTitle className="text-xl">Verify Your Information</CardTitle>
+                <CardDescription className="text-sm">
+                  Complete verification to unlock full access
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Personal Information */}
+                {/* Vehicle Section */}
                 <div className="space-y-3">
-                  <div className="space-y-2">
-                    <Label htmlFor="fullName">Full Legal Name</Label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="fullName"
-                        placeholder="John Michael Doe"
-                        value={fullName}
-                        onChange={(e) => setFullName(e.target.value)}
-                        className="pl-10"
-                      />
-                    </div>
+                  <div className="flex items-center gap-2">
+                    <Car className="h-4 w-4 text-accent" />
+                    <span className="font-medium text-sm text-foreground">Vehicle (Optional)</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => setVerificationMethod("vin")}
+                      className={cn(
+                        "rounded-lg border-2 p-3 text-left transition-all",
+                        verificationMethod === "vin"
+                          ? "border-accent bg-accent/5"
+                          : "border-border hover:border-accent/30"
+                      )}
+                    >
+                      <p className="font-medium text-sm text-foreground">VIN</p>
+                      <p className="text-xs text-muted-foreground">17-char ID</p>
+                    </button>
+                    <button
+                      onClick={() => setVerificationMethod("plate")}
+                      className={cn(
+                        "rounded-lg border-2 p-3 text-left transition-all",
+                        verificationMethod === "plate"
+                          ? "border-accent bg-accent/5"
+                          : "border-border hover:border-accent/30"
+                      )}
+                    >
+                      <p className="font-medium text-sm text-foreground">Plate</p>
+                      <p className="text-xs text-muted-foreground">License #</p>
+                    </button>
                   </div>
                   
-                  <div className="space-y-2">
-                    <Label htmlFor="address">Home Address</Label>
-                    <div className="relative">
-                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="address"
-                        placeholder="123 Main St, City, State 12345"
-                        value={address}
-                        onChange={(e) => setAddress(e.target.value)}
-                        className="pl-10"
-                      />
-                    </div>
+                  {verificationMethod === "vin" && (
+                    <Input
+                      placeholder="Enter your 17-character VIN"
+                      value={vin}
+                      onChange={(e) => setVin(e.target.value)}
+                      maxLength={17}
+                    />
+                  )}
+                  
+                  {verificationMethod === "plate" && (
+                    <Input
+                      placeholder="Enter your license plate"
+                      value={licensePlate}
+                      onChange={(e) => setLicensePlate(e.target.value)}
+                    />
+                  )}
+                  
+                  {verificationMethod && (
+                    <Input
+                      placeholder="Insurance Provider (optional)"
+                      value={insuranceProvider}
+                      onChange={(e) => setInsuranceProvider(e.target.value)}
+                    />
+                  )}
+                </div>
+
+                <div className="border-t border-border pt-4 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <User className="h-4 w-4 text-accent" />
+                    <span className="font-medium text-sm text-foreground">Personal Information</span>
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-2">
-                      <Label htmlFor="phone">Phone Number</Label>
-                      <div className="relative">
-                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          id="phone"
-                          type="tel"
-                          placeholder="(555) 123-4567"
-                          value={phoneNumber}
-                          onChange={(e) => setPhoneNumber(e.target.value)}
-                          className="pl-10"
-                        />
-                      </div>
+                  <Input
+                    placeholder="Full Legal Name"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                  />
+                  
+                  <Input
+                    placeholder="Home Address"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                  />
+                  
+                  <div className="grid grid-cols-2 gap-2">
+                    <Input
+                      type="tel"
+                      placeholder="Phone Number"
+                      value={phoneNumber}
+                      onChange={(e) => setPhoneNumber(e.target.value)}
+                    />
+                    <Input
+                      type="password"
+                      placeholder="SSN (Last 4)"
+                      maxLength={4}
+                      value={ssn}
+                      onChange={(e) => setSsn(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                    />
+                  </div>
+                </div>
+
+                <div className="border-t border-border pt-4 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-accent" />
+                    <span className="font-medium text-sm text-foreground">Documents</span>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <input
+                        type="file"
+                        ref={driverLicenseInputRef}
+                        accept="image/*,.pdf"
+                        onChange={(e) => setDriverLicenseFile(e.target.files?.[0] || null)}
+                        className="hidden"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => driverLicenseInputRef.current?.click()}
+                        className={cn(
+                          "w-full rounded-lg border-2 border-dashed p-3 text-center transition-all",
+                          driverLicenseFile
+                            ? "border-accent bg-accent/5"
+                            : "border-border hover:border-accent/30"
+                        )}
+                      >
+                        {driverLicenseFile ? (
+                          <div className="flex items-center justify-center gap-1">
+                            <CheckCircle2 className="h-4 w-4 text-accent" />
+                            <span className="text-xs font-medium text-foreground truncate max-w-[80px]">{driverLicenseFile.name}</span>
+                          </div>
+                        ) : (
+                          <div className="space-y-1">
+                            <IdCard className="h-5 w-5 mx-auto text-muted-foreground" />
+                            <p className="text-xs text-muted-foreground">Driver's License</p>
+                          </div>
+                        )}
+                      </button>
                     </div>
                     
-                    <div className="space-y-2">
-                      <Label htmlFor="ssn">SSN (Last 4)</Label>
-                      <div className="relative">
-                        <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          id="ssn"
-                          type="password"
-                          placeholder="••••"
-                          maxLength={4}
-                          value={ssn}
-                          onChange={(e) => setSsn(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                          className="pl-10"
-                        />
-                      </div>
+                    <div>
+                      <input
+                        type="file"
+                        ref={paystubInputRef}
+                        accept="image/*,.pdf"
+                        onChange={(e) => setPaystubFile(e.target.files?.[0] || null)}
+                        className="hidden"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => paystubInputRef.current?.click()}
+                        className={cn(
+                          "w-full rounded-lg border-2 border-dashed p-3 text-center transition-all",
+                          paystubFile
+                            ? "border-accent bg-accent/5"
+                            : "border-border hover:border-accent/30"
+                        )}
+                      >
+                        {paystubFile ? (
+                          <div className="flex items-center justify-center gap-1">
+                            <CheckCircle2 className="h-4 w-4 text-accent" />
+                            <span className="text-xs font-medium text-foreground truncate max-w-[80px]">{paystubFile.name}</span>
+                          </div>
+                        ) : (
+                          <div className="space-y-1">
+                            <Receipt className="h-5 w-5 mx-auto text-muted-foreground" />
+                            <p className="text-xs text-muted-foreground">Paystub</p>
+                          </div>
+                        )}
+                      </button>
                     </div>
                   </div>
-                </div>
-
-                <div className="border-t border-border pt-4">
-                  <p className="text-sm font-medium text-foreground mb-3">Upload Documents</p>
-                  
-                  {/* Driver's License Upload */}
-                  <div className="space-y-2 mb-3">
-                    <div className="flex items-center gap-2">
-                      <IdCard className="h-4 w-4 text-accent" />
-                      <Label className="text-sm">Driver's License</Label>
-                      <span className="text-xs text-destructive">*Required</span>
-                    </div>
-                    <input
-                      type="file"
-                      ref={driverLicenseInputRef}
-                      accept="image/*,.pdf"
-                      onChange={(e) => setDriverLicenseFile(e.target.files?.[0] || null)}
-                      className="hidden"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => driverLicenseInputRef.current?.click()}
-                      className={cn(
-                        "w-full rounded-lg border-2 border-dashed p-4 text-center transition-all",
-                        driverLicenseFile
-                          ? "border-accent bg-accent/5"
-                          : "border-border hover:border-accent/30"
-                      )}
-                    >
-                      {driverLicenseFile ? (
-                        <div className="flex items-center justify-center gap-2">
-                          <CheckCircle2 className="h-4 w-4 text-accent" />
-                          <span className="text-sm font-medium text-foreground">{driverLicenseFile.name}</span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center justify-center gap-2">
-                          <Upload className="h-4 w-4 text-muted-foreground" />
-                          <p className="text-sm text-muted-foreground">Click to upload</p>
-                        </div>
-                      )}
-                    </button>
-                  </div>
-
-                  {/* Paystub Upload */}
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <Receipt className="h-4 w-4 text-accent" />
-                      <Label className="text-sm">Recent Paystub</Label>
-                      <span className="text-xs text-destructive">*Required</span>
-                    </div>
-                    <input
-                      type="file"
-                      ref={paystubInputRef}
-                      accept="image/*,.pdf"
-                      onChange={(e) => setPaystubFile(e.target.files?.[0] || null)}
-                      className="hidden"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => paystubInputRef.current?.click()}
-                      className={cn(
-                        "w-full rounded-lg border-2 border-dashed p-4 text-center transition-all",
-                        paystubFile
-                          ? "border-accent bg-accent/5"
-                          : "border-border hover:border-accent/30"
-                      )}
-                    >
-                      {paystubFile ? (
-                        <div className="flex items-center justify-center gap-2">
-                          <CheckCircle2 className="h-4 w-4 text-accent" />
-                          <span className="text-sm font-medium text-foreground">{paystubFile.name}</span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center justify-center gap-2">
-                          <Upload className="h-4 w-4 text-muted-foreground" />
-                          <p className="text-sm text-muted-foreground">Click to upload</p>
-                        </div>
-                      )}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="bg-secondary/50 rounded-lg p-3">
-                  <p className="text-xs text-muted-foreground text-center">
-                    Your information is securely stored and encrypted. We use it to verify your identity.
-                  </p>
                 </div>
                 
-                <Button
-                  variant="accent"
-                  className="w-full"
-                  onClick={handleIdentityVerification}
-                  disabled={uploadingDocs || !fullName || !address || !phoneNumber || !ssn || !driverLicenseFile || !paystubFile}
-                >
-                  {uploadingDocs ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Verifying...
-                    </>
-                  ) : (
-                    <>
-                      Continue
-                      <ArrowRight className="h-4 w-4 ml-2" />
-                    </>
-                  )}
-                </Button>
+                <div className="flex gap-2 pt-2">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={skipVerification}
+                    disabled={isLoading || uploadingDocs}
+                  >
+                    Skip
+                  </Button>
+                  <Button
+                    variant="accent"
+                    className="flex-1"
+                    onClick={async () => {
+                      await handleVehicleVerification();
+                      if (fullName && address && phoneNumber && ssn && driverLicenseFile && paystubFile) {
+                        await handleIdentityVerification();
+                      }
+                    }}
+                    disabled={isLoading || uploadingDocs}
+                  >
+                    {(isLoading || uploadingDocs) ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        Verifying...
+                      </>
+                    ) : (
+                      <>
+                        Continue
+                        <ArrowRight className="h-4 w-4 ml-2" />
+                      </>
+                    )}
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           )}
@@ -963,199 +986,104 @@ export default function AuthPage() {
             </Card>
           )}
 
-          {/* Step: Vehicle Verification */}
-          {signupStep === "vehicle" && (
+          {/* Step: Setup (Bank + Payment Combined) */}
+          {signupStep === "setup" && (
             <Card className="animate-scale-in">
-              <CardHeader className="text-center">
-                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-accent/10 text-accent">
-                  <Car className="h-7 w-7" />
+              <CardHeader className="text-center pb-4">
+                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-accent/10 text-accent">
+                  <CreditCard className="h-6 w-6" />
                 </div>
-                <CardTitle className="text-2xl">Verify Your Vehicle</CardTitle>
-                <CardDescription>
-                  Verify your car and insurance to unlock $3,000 access
+                <CardTitle className="text-xl">Complete Setup</CardTitle>
+                <CardDescription className="text-sm">
+                  Connect bank and process first payment
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    onClick={() => setVerificationMethod("vin")}
-                    className={cn(
-                      "rounded-xl border-2 p-4 text-left transition-all",
-                      verificationMethod === "vin"
-                        ? "border-accent bg-accent/5"
-                        : "border-border hover:border-accent/30"
-                    )}
-                  >
-                    <p className="font-semibold text-foreground">VIN Number</p>
-                    <p className="text-xs text-muted-foreground">17-character ID</p>
-                  </button>
-                  <button
-                    onClick={() => setVerificationMethod("plate")}
-                    className={cn(
-                      "rounded-xl border-2 p-4 text-left transition-all",
-                      verificationMethod === "plate"
-                        ? "border-accent bg-accent/5"
-                        : "border-border hover:border-accent/30"
-                    )}
-                  >
-                    <p className="font-semibold text-foreground">License Plate</p>
-                    <p className="text-xs text-muted-foreground">State + plate</p>
-                  </button>
-                </div>
-                
-                {verificationMethod === "vin" && (
-                  <div className="space-y-2">
-                    <Label htmlFor="vin">VIN Number</Label>
-                    <Input
-                      id="vin"
-                      placeholder="Enter your 17-character VIN"
-                      value={vin}
-                      onChange={(e) => setVin(e.target.value)}
-                      maxLength={17}
-                    />
-                  </div>
-                )}
-                
-                {verificationMethod === "plate" && (
-                  <div className="space-y-2">
-                    <Label htmlFor="plate">License Plate</Label>
-                    <Input
-                      id="plate"
-                      placeholder="Enter your license plate"
-                      value={licensePlate}
-                      onChange={(e) => setLicensePlate(e.target.value)}
-                    />
-                  </div>
-                )}
-
-                <div className="space-y-4 pt-2">
-                  <div className="flex items-center gap-2">
-                    <Shield className="h-5 w-5 text-accent" />
-                    <span className="font-semibold text-foreground">Insurance Verification</span>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="insurance">Insurance Provider</Label>
-                    <Input
-                      id="insurance"
-                      placeholder="e.g., State Farm, GEICO, Progressive"
-                      value={insuranceProvider}
-                      onChange={(e) => setInsuranceProvider(e.target.value)}
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="policy">Policy Number</Label>
-                    <Input
-                      id="policy"
-                      placeholder="Enter your policy number"
-                      value={policyNumber}
-                      onChange={(e) => setPolicyNumber(e.target.value)}
-                    />
-                  </div>
-                </div>
-                
-                <div className="flex gap-3">
-                  <Button
-                    variant="outline"
-                    className="flex-1"
-                    onClick={skipVehicleVerification}
-                    disabled={isLoading}
-                  >
-                    Skip for Now
-                  </Button>
-                  <Button
-                    variant="accent"
-                    className="flex-1"
-                    onClick={handleVehicleVerification}
-                    disabled={isLoading}
-                  >
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                        Verifying...
-                      </>
-                    ) : (
-                      <>
-                        Continue
-                        <ArrowRight className="h-4 w-4 ml-2" />
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Step: Bank Connection */}
-          {signupStep === "bank" && (
-            <Card className="animate-scale-in">
-              <CardHeader className="text-center">
-                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-accent/10 text-accent">
-                  <Building2 className="h-7 w-7" />
-                </div>
-                <CardTitle className="text-2xl">Connect Your Bank</CardTitle>
-                <CardDescription>
-                  Link your bank for auto-settlement
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid grid-cols-3 gap-2">
-                  {banks.map((bank) => (
-                    <button
-                      key={bank.id}
-                      onClick={() => setSelectedBank(bank.id)}
-                      className={cn(
-                        "rounded-xl border-2 p-3 text-center transition-all",
-                        selectedBank === bank.id
-                          ? "border-accent bg-accent/5"
-                          : "border-border hover:border-accent/30"
-                      )}
-                    >
-                      <span className="text-xl block mb-1">{bank.logo}</span>
-                      <p className="text-xs font-medium text-foreground">{bank.name}</p>
-                    </button>
-                  ))}
-                </div>
-
+              <CardContent className="space-y-4">
+                {/* Bank Selection */}
                 <div className="space-y-3">
-                  <Label>When do you get paid?</Label>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="flex items-center gap-2">
+                    <Building2 className="h-4 w-4 text-accent" />
+                    <span className="font-medium text-sm text-foreground">Select Your Bank</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    {banks.map((bank) => (
+                      <button
+                        key={bank.id}
+                        onClick={() => setSelectedBank(bank.id)}
+                        className={cn(
+                          "rounded-lg border-2 p-2 text-center transition-all",
+                          selectedBank === bank.id
+                            ? "border-accent bg-accent/5"
+                            : "border-border hover:border-accent/30"
+                        )}
+                      >
+                        <span className="text-lg block">{bank.logo}</span>
+                        <p className="text-xs font-medium text-foreground truncate">{bank.name}</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Settlement Timing */}
+                <div className="space-y-3">
+                  <Label className="text-sm">Payment Schedule</Label>
+                  <div className="grid grid-cols-2 gap-2">
                     <button
                       onClick={() => setSettlementTiming("payday")}
                       className={cn(
-                        "rounded-xl border-2 p-4 text-left transition-all",
+                        "rounded-lg border-2 p-3 text-left transition-all",
                         settlementTiming === "payday"
                           ? "border-accent bg-accent/5"
                           : "border-border hover:border-accent/30"
                       )}
                     >
-                      <p className="font-semibold text-foreground">Bi-Weekly</p>
-                      <p className="text-xs text-muted-foreground">Every two weeks</p>
+                      <p className="font-medium text-sm text-foreground">Bi-Weekly</p>
+                      <p className="text-xs text-muted-foreground">Every 2 weeks</p>
                     </button>
                     <button
                       onClick={() => setSettlementTiming("month-end")}
                       className={cn(
-                        "rounded-xl border-2 p-4 text-left transition-all",
+                        "rounded-lg border-2 p-3 text-left transition-all",
                         settlementTiming === "month-end"
                           ? "border-accent bg-accent/5"
                           : "border-border hover:border-accent/30"
                       )}
                     >
-                      <p className="font-semibold text-foreground">Weekly</p>
+                      <p className="font-medium text-sm text-foreground">Weekly</p>
                       <p className="text-xs text-muted-foreground">Every week</p>
                     </button>
                   </div>
                 </div>
+
+                {/* Payment Summary */}
+                <div className="rounded-lg border border-border bg-secondary/30 p-4 space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Plan</span>
+                    <span className="font-medium text-foreground">{currentPlan?.name}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Monthly Fee</span>
+                    <span className="font-medium text-foreground">${currentPlan?.price}/mo</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">First 2 Installments</span>
+                    <span className="font-medium text-foreground">${((currentPlan?.price || 0) / 2).toFixed(2)}</span>
+                  </div>
+                  <hr className="border-border" />
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-foreground">Total Due Today</span>
+                    <span className="font-bold text-accent">${((currentPlan?.price || 0) + ((currentPlan?.price || 0) / 2)).toFixed(2)}</span>
+                  </div>
+                </div>
                 
-                <div className="flex gap-3">
+                <div className="flex gap-2">
                   <Button
                     variant="outline"
                     className="flex-1"
-                    onClick={skipBankConnection}
+                    onClick={skipSetup}
                     disabled={isLoading}
                   >
-                    Skip for Now
+                    Skip
                   </Button>
                   <Button
                     variant="accent"
@@ -1166,113 +1094,16 @@ export default function AuthPage() {
                     {isLoading ? (
                       <>
                         <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                        Connecting...
+                        Processing...
                       </>
                     ) : (
                       <>
-                        Continue
-                        <ArrowRight className="h-4 w-4 ml-2" />
+                        Pay & Activate
+                        <CheckCircle2 className="h-4 w-4 ml-2" />
                       </>
                     )}
                   </Button>
                 </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Step: Payment (First Two Installments) */}
-          {signupStep === "payment" && (
-            <Card className="animate-scale-in">
-              <CardHeader className="text-center">
-                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-accent/10 text-accent">
-                  <CreditCard className="h-7 w-7" />
-                </div>
-                <CardTitle className="text-2xl">Complete Your Setup</CardTitle>
-                <CardDescription>
-                  Collect first two monthly installments to activate
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="rounded-xl border border-border bg-secondary/30 p-6 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Plan</span>
-                    <span className="font-semibold text-foreground">{currentPlan?.name}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Monthly Fee</span>
-                    <span className="font-semibold text-foreground">${currentPlan?.price}/month</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Installment</span>
-                    <span className="font-semibold text-foreground">${((currentPlan?.price || 0) / 4).toFixed(2)} x 4</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Access Limit</span>
-                    <span className="font-semibold text-accent">${currentPlan?.maxAccess.toLocaleString()}</span>
-                  </div>
-                  <hr className="border-border" />
-                  <div className="flex items-center justify-between text-lg">
-                    <span className="font-semibold text-foreground">Total Dues Today</span>
-                    <span className="font-bold text-accent">${((currentPlan?.price || 0) + ((currentPlan?.price || 0) / 2)).toFixed(2)}</span>
-                  </div>
-                </div>
-
-                {/* Installment Breakdown */}
-                <div className="rounded-xl border border-border bg-secondary/30 p-4 space-y-3">
-                  <p className="text-sm font-semibold text-foreground">Payment Schedule</p>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-sm">
-                      <div className="flex items-center gap-2">
-                        <CheckCircle2 className="h-4 w-4 text-accent" />
-                        <span className="text-foreground">Installment 1</span>
-                        <Badge variant="accent" className="text-xs">Due Today</Badge>
-                      </div>
-                      <span className="font-medium text-foreground">${((currentPlan?.price || 0) / 4).toFixed(2)}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <div className="flex items-center gap-2">
-                        <CheckCircle2 className="h-4 w-4 text-accent" />
-                        <span className="text-foreground">Installment 2</span>
-                        <Badge variant="accent" className="text-xs">Due Today</Badge>
-                      </div>
-                      <span className="font-medium text-foreground">${((currentPlan?.price || 0) / 4).toFixed(2)}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <div className="flex items-center gap-2">
-                        <div className="h-4 w-4 rounded-full border-2 border-muted-foreground/30" />
-                        <span className="text-muted-foreground">Installment 3</span>
-                      </div>
-                      <span className="font-medium text-muted-foreground">${((currentPlan?.price || 0) / 4).toFixed(2)}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <div className="flex items-center gap-2">
-                        <div className="h-4 w-4 rounded-full border-2 border-muted-foreground/30" />
-                        <span className="text-muted-foreground">Installment 4</span>
-                      </div>
-                      <span className="font-medium text-muted-foreground">${((currentPlan?.price || 0) / 4).toFixed(2)}</span>
-                    </div>
-                  </div>
-                </div>
-                
-                <Button
-                  variant="accent"
-                  className="w-full"
-                  size="lg"
-                  onClick={handlePayment}
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="h-5 w-5 animate-spin mr-2" />
-                      Processing Payment...
-                    </>
-                  ) : (
-                    <>
-                      Pay ${((currentPlan?.price || 0) + ((currentPlan?.price || 0) / 2)).toFixed(2)} & Activate
-                      <CheckCircle2 className="h-5 w-5 ml-2" />
-                    </>
-                  )}
-                </Button>
               </CardContent>
             </Card>
           )}
@@ -1302,7 +1133,7 @@ export default function AuthPage() {
                   Auto+ Verified
                 </Badge>
                 <p className="text-sm text-muted-foreground mb-2">Your monthly access</p>
-                <p className="text-5xl font-bold text-accent">$3,000</p>
+                <p className="text-5xl font-bold text-accent">${currentPlan?.maxAccess.toLocaleString() || "3,000"}</p>
                 <p className="text-sm text-muted-foreground mt-2">Ready to use for approved bills</p>
               </div>
               
