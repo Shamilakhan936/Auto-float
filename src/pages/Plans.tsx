@@ -1,16 +1,20 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Check, Car, Zap, Crown } from "lucide-react";
+import { Check, Car, Zap, Crown, Loader2 } from "lucide-react";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 
 const plans = [
   {
     name: "Basic",
+    tier: "basic" as const,
     icon: Zap,
     price: 15,
     maxAccess: 500,
@@ -20,6 +24,7 @@ const plans = [
   },
   {
     name: "Plus",
+    tier: "plus" as const,
     icon: Crown,
     price: 25,
     maxAccess: 1500,
@@ -29,6 +34,7 @@ const plans = [
   },
   {
     name: "Auto+",
+    tier: "auto_plus" as const,
     icon: Car,
     price: 40,
     maxAccess: 3000,
@@ -40,7 +46,78 @@ const plans = [
 ];
 
 export default function PlansPage() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+  const [currentTier, setCurrentTier] = useState<string | null>(null);
+  const [updating, setUpdating] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      fetchCurrentSubscription();
+    }
+  }, [user]);
+
+  const fetchCurrentSubscription = async () => {
+    if (!user) return;
+    
+    const { data, error } = await supabase
+      .from("subscriptions")
+      .select("tier")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    
+    if (data) {
+      setCurrentTier(data.tier);
+      setSelectedPlan(data.tier);
+    }
+  };
+
+  const handleSelectPlan = async (tier: string) => {
+    if (!user) {
+      navigate("/auth");
+      return;
+    }
+
+    setSelectedPlan(tier);
+    setUpdating(true);
+
+    try {
+      const plan = plans.find(p => p.tier === tier);
+      if (!plan) return;
+
+      const { error } = await supabase
+        .from("subscriptions")
+        .update({ 
+          tier: tier as "basic" | "plus" | "auto_plus",
+          access_limit: plan.maxAccess,
+        })
+        .eq("user_id", user.id);
+
+      if (error) throw error;
+
+      setCurrentTier(tier);
+      toast({
+        title: "Plan updated!",
+        description: `You're now on the ${plan.name} plan.`,
+      });
+
+      if (tier === "auto_plus") {
+        navigate("/verify");
+      } else {
+        navigate("/dashboard");
+      }
+    } catch (error) {
+      console.error("Error updating plan:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update plan. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setUpdating(false);
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -69,13 +146,21 @@ export default function PlansPage() {
                   key={plan.name}
                   className={cn(
                     "relative cursor-pointer transition-all duration-300 animate-fade-in opacity-0",
-                    selectedPlan === plan.name && "ring-2 ring-accent shadow-glow",
-                    plan.popular && "border-accent/50"
+                    selectedPlan === plan.tier && "ring-2 ring-accent shadow-glow",
+                    plan.popular && "border-accent/50",
+                    currentTier === plan.tier && "border-accent"
                   )}
                   style={{ animationDelay: `${index * 100}ms` }}
-                  onClick={() => setSelectedPlan(plan.name)}
+                  onClick={() => setSelectedPlan(plan.tier)}
                 >
-                  {plan.popular && (
+                  {currentTier === plan.tier && (
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                      <Badge variant="success" className="shadow-md">
+                        Current Plan
+                      </Badge>
+                    </div>
+                  )}
+                  {plan.popular && currentTier !== plan.tier && (
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                       <Badge variant="accent" className="shadow-md">
                         Most Popular
@@ -120,14 +205,23 @@ export default function PlansPage() {
                       )}
                     </ul>
                     
-                    <Link to="/verify">
-                      <Button
-                        variant={plan.popular ? "accent" : "outline"}
-                        className="w-full"
-                      >
-                        {selectedPlan === plan.name ? "Selected" : "Choose Plan"}
-                      </Button>
-                    </Link>
+                    <Button
+                      variant={plan.popular ? "accent" : "outline"}
+                      className="w-full"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSelectPlan(plan.tier);
+                      }}
+                      disabled={updating || currentTier === plan.tier}
+                    >
+                      {updating && selectedPlan === plan.tier ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : currentTier === plan.tier ? (
+                        "Current Plan"
+                      ) : (
+                        "Choose Plan"
+                      )}
+                    </Button>
                   </CardContent>
                 </Card>
               ))}

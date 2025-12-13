@@ -1,25 +1,104 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Car, CheckCircle2, Shield, ArrowRight, AlertCircle } from "lucide-react";
+import { Car, CheckCircle2, Shield, ArrowRight, AlertCircle, Loader2 } from "lucide-react";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 
 type Step = "intro" | "vin" | "ownership" | "insurance" | "complete";
 
 export default function VerifyPage() {
+  const { user, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
   const [step, setStep] = useState<Step>("intro");
   const [vin, setVin] = useState("");
   const [licensePlate, setLicensePlate] = useState("");
   const [verificationMethod, setVerificationMethod] = useState<"vin" | "plate" | null>(null);
+  const [insuranceProvider, setInsuranceProvider] = useState("");
+  const [policyNumber, setPolicyNumber] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [isAlreadyVerified, setIsAlreadyVerified] = useState(false);
 
-  const handleSkip = () => {
-    // Navigate to bank connection
+  useEffect(() => {
+    if (user) {
+      checkExistingVehicle();
+    }
+  }, [user]);
+
+  const checkExistingVehicle = async () => {
+    if (!user) return;
+    
+    const { data, error } = await supabase
+      .from("vehicles")
+      .select("is_verified")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    
+    if (data?.is_verified) {
+      setIsAlreadyVerified(true);
+      setStep("complete");
+    }
+  };
+
+  const handleVerify = async () => {
+    if (!user) {
+      navigate("/auth");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      // Insert or update vehicle
+      const { error: vehicleError } = await supabase.from("vehicles").upsert({
+        user_id: user.id,
+        vin: verificationMethod === "vin" ? vin : null,
+        license_plate: verificationMethod === "plate" ? licensePlate : null,
+        make: "Honda",
+        model: "Accord",
+        year: 2022,
+        insurance_provider: insuranceProvider,
+        is_verified: true,
+        insurance_verified: true,
+        verified_at: new Date().toISOString(),
+      }, { onConflict: "user_id" });
+
+      if (vehicleError) throw vehicleError;
+
+      // Update subscription to auto_plus with higher limit
+      const { error: subError } = await supabase
+        .from("subscriptions")
+        .update({ 
+          tier: "auto_plus",
+          access_limit: 3000,
+        })
+        .eq("user_id", user.id);
+
+      if (subError) throw subError;
+
+      toast({
+        title: "Vehicle verified!",
+        description: "Your access limit has been increased to $3,000.",
+      });
+
+      setStep("complete");
+    } catch (error) {
+      console.error("Error verifying vehicle:", error);
+      toast({
+        title: "Verification failed",
+        description: "Please try again or contact support.",
+        variant: "destructive",
+      });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const steps = [
@@ -30,6 +109,14 @@ export default function VerifyPage() {
   ];
 
   const currentStepIndex = steps.findIndex((s) => s.id === step);
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-accent" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -72,11 +159,16 @@ export default function VerifyPage() {
               </div>
               
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                <Button variant="accent" size="lg" onClick={() => setStep("vin")} className="w-full sm:w-auto">
+                <Button 
+                  variant="accent" 
+                  size="lg" 
+                  onClick={() => user ? setStep("vin") : navigate("/auth")} 
+                  className="w-full sm:w-auto"
+                >
                   Verify Now
                   <ArrowRight className="h-5 w-5 ml-2" />
                 </Button>
-                <Link to="/connect-bank">
+                <Link to="/dashboard">
                   <Button variant="outline" size="lg" className="w-full sm:w-auto">
                     Skip for Now
                   </Button>
@@ -221,7 +313,9 @@ export default function VerifyPage() {
                           <Car className="h-8 w-8 text-accent flex-shrink-0" />
                           <div>
                             <p className="font-semibold text-foreground">2022 Honda Accord</p>
-                            <p className="text-sm text-muted-foreground">VIN: {vin || "1HGCV1F34NA******"}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {verificationMethod === "vin" ? `VIN: ${vin || "1HGCV1F34NA******"}` : `Plate: ${licensePlate}`}
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -253,21 +347,45 @@ export default function VerifyPage() {
                     <CardContent className="space-y-6">
                       <div className="space-y-2">
                         <Label htmlFor="insurance">Insurance Provider</Label>
-                        <Input id="insurance" placeholder="e.g., State Farm, GEICO, Progressive" />
+                        <Input 
+                          id="insurance" 
+                          placeholder="e.g., State Farm, GEICO, Progressive"
+                          value={insuranceProvider}
+                          onChange={(e) => setInsuranceProvider(e.target.value)}
+                        />
                       </div>
                       
                       <div className="space-y-2">
                         <Label htmlFor="policy">Policy Number</Label>
-                        <Input id="policy" placeholder="Enter your policy number" />
+                        <Input 
+                          id="policy" 
+                          placeholder="Enter your policy number"
+                          value={policyNumber}
+                          onChange={(e) => setPolicyNumber(e.target.value)}
+                        />
                       </div>
                       
                       <p className="text-sm text-muted-foreground">
                         We verify insurance status electronically. Your policy details are kept secure.
                       </p>
                       
-                      <Button variant="accent" className="w-full" onClick={() => setStep("complete")}>
-                        Verify Insurance
-                        <ArrowRight className="h-4 w-4 ml-2" />
+                      <Button 
+                        variant="accent" 
+                        className="w-full" 
+                        onClick={handleVerify}
+                        disabled={submitting || !insuranceProvider}
+                      >
+                        {submitting ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                            Verifying...
+                          </>
+                        ) : (
+                          <>
+                            Verify Insurance
+                            <ArrowRight className="h-4 w-4 ml-2" />
+                          </>
+                        )}
                       </Button>
                     </CardContent>
                   </>
@@ -296,9 +414,9 @@ export default function VerifyPage() {
                         <p className="text-sm text-muted-foreground mt-2">per month</p>
                       </div>
                       
-                      <Link to="/connect-bank">
+                      <Link to="/dashboard">
                         <Button variant="accent" size="lg" className="w-full">
-                          Connect Bank Account
+                          Go to Dashboard
                           <ArrowRight className="h-5 w-5 ml-2" />
                         </Button>
                       </Link>
