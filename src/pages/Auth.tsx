@@ -48,25 +48,28 @@ const plans = [
     tier: "basic" as const,
     icon: Zap,
     price: 15,
-    maxAccess: 500,
+    maxAccess: 200,
     description: "Essential bill coverage",
+    features: ["Auto Verification", "Insurance Verification"],
   },
   {
     name: "Plus",
     tier: "plus" as const,
     icon: Crown,
     price: 25,
-    maxAccess: 1500,
+    maxAccess: 300,
     description: "Extended coverage",
+    features: ["Auto Verification", "Insurance Verification"],
     popular: true,
   },
   {
     name: "Auto+",
     tier: "auto_plus" as const,
     icon: Car,
-    price: 40,
-    maxAccess: 3000,
+    price: 75,
+    maxAccess: 1000,
     description: "Maximum coverage",
+    features: ["Auto Verification", "Insurance Verification", "Priority Support"],
   },
 ];
 
@@ -853,7 +856,7 @@ export default function AuthPage() {
                 </div>
 
                 <div className="space-y-3">
-                  <Label>Settlement Timing</Label>
+                  <Label>When do you get paid?</Label>
                   <div className="grid grid-cols-2 gap-3">
                     <button
                       onClick={() => setSettlementTiming("payday")}
@@ -864,8 +867,8 @@ export default function AuthPage() {
                           : "border-border hover:border-accent/30"
                       )}
                     >
-                      <p className="font-semibold text-foreground">On Payday</p>
-                      <p className="text-xs text-muted-foreground">When your check arrives</p>
+                      <p className="font-semibold text-foreground">Bi-Weekly</p>
+                      <p className="text-xs text-muted-foreground">Every two weeks</p>
                     </button>
                     <button
                       onClick={() => setSettlementTiming("month-end")}
@@ -876,8 +879,8 @@ export default function AuthPage() {
                           : "border-border hover:border-accent/30"
                       )}
                     >
-                      <p className="font-semibold text-foreground">Month-End</p>
-                      <p className="text-xs text-muted-foreground">Last day of month</p>
+                      <p className="font-semibold text-foreground">Weekly</p>
+                      <p className="text-xs text-muted-foreground">Every week</p>
                     </button>
                   </div>
                 </div>
