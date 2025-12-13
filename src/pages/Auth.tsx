@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { 
   Car, 
   Mail, 
@@ -26,7 +27,11 @@ import {
   Receipt,
   MapPin,
   Phone,
-  KeyRound
+  KeyRound,
+  Plus,
+  Trash2,
+  Calendar,
+  DollarSign
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -34,6 +39,15 @@ import { toast } from "@/hooks/use-toast";
 import { z } from "zod";
 import { cn } from "@/lib/utils";
 import { addDays } from "date-fns";
+
+const billCategories = [
+  { value: "rent", label: "Rent" },
+  { value: "utilities", label: "Utilities" },
+  { value: "phone", label: "Phone" },
+  { value: "insurance", label: "Insurance" },
+  { value: "childcare", label: "Childcare" },
+  { value: "auto", label: "Auto" },
+];
 
 const signInSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -47,7 +61,7 @@ const signUpSchema = z.object({
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
-type SignupStep = "account" | "verify" | "plan" | "setup" | "complete";
+type SignupStep = "account" | "verify" | "plan" | "bills" | "payment" | "setup" | "complete";
 
 const plans = [
   {
@@ -126,6 +140,22 @@ export default function AuthPage() {
   const [uploadingDocs, setUploadingDocs] = useState(false);
   const driverLicenseInputRef = useRef<HTMLInputElement>(null);
   const paystubInputRef = useRef<HTMLInputElement>(null);
+
+  // Bills upload
+  const [bills, setBills] = useState<Array<{ name: string; amount: string; category: string; dueDate: string }>>([]);
+  const [newBillName, setNewBillName] = useState("");
+  const [newBillAmount, setNewBillAmount] = useState("");
+  const [newBillCategory, setNewBillCategory] = useState("");
+  const [newBillDueDate, setNewBillDueDate] = useState("");
+  const billFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Credit card payment
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [cardNumber, setCardNumber] = useState("");
+  const [cardExpiry, setCardExpiry] = useState("");
+  const [cardCvc, setCardCvc] = useState("");
+  const [cardName, setCardName] = useState("");
+  const [processingPayment, setProcessingPayment] = useState(false);
   
   const { signIn, signUp } = useAuth();
   const navigate = useNavigate();
@@ -311,7 +341,7 @@ export default function AuthPage() {
 
       if (error) throw error;
 
-      setSignupStep("setup");
+      setSignupStep("bills");
     } catch (error) {
       console.error("Error updating plan:", error);
       toast({
@@ -444,8 +474,118 @@ export default function AuthPage() {
     { id: "account", label: "Account" },
     { id: "verify", label: "Verify" },
     { id: "plan", label: "Plan" },
-    { id: "setup", label: "Setup" },
+    { id: "bills", label: "Bills" },
+    { id: "payment", label: "Payment" },
+    { id: "setup", label: "Bank" },
   ];
+
+  const addBill = () => {
+    if (!newBillName || !newBillAmount || !newBillCategory || !newBillDueDate) {
+      toast({
+        title: "All fields required",
+        description: "Please fill in all bill details.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setBills([...bills, { 
+      name: newBillName, 
+      amount: newBillAmount, 
+      category: newBillCategory, 
+      dueDate: newBillDueDate 
+    }]);
+    setNewBillName("");
+    setNewBillAmount("");
+    setNewBillCategory("");
+    setNewBillDueDate("");
+  };
+
+  const removeBill = (index: number) => {
+    setBills(bills.filter((_, i) => i !== index));
+  };
+
+  const handleBillsSubmit = async () => {
+    if (!userId) return;
+    setIsLoading(true);
+
+    try {
+      // Save bills to database
+      for (const bill of bills) {
+        await supabase.from("bills").insert({
+          user_id: userId,
+          name: bill.name,
+          amount: parseFloat(bill.amount),
+          category: bill.category,
+          due_date: bill.dueDate,
+          status: "pending",
+        });
+      }
+
+      setSignupStep("payment");
+    } catch (error) {
+      console.error("Error saving bills:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save bills. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCreditCardPayment = async () => {
+    if (!cardNumber || !cardExpiry || !cardCvc || !cardName) {
+      toast({
+        title: "All fields required",
+        description: "Please fill in all card details.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setProcessingPayment(true);
+
+    try {
+      // Simulate payment processing
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      toast({
+        title: "Payment successful!",
+        description: `$${((currentPlan?.price || 0) + ((currentPlan?.price || 0) / 2)).toFixed(2)} has been charged.`,
+      });
+
+      setShowPaymentModal(false);
+      setSignupStep("setup");
+    } catch (error) {
+      toast({
+        title: "Payment failed",
+        description: "Please try again or use a different card.",
+        variant: "destructive",
+      });
+    } finally {
+      setProcessingPayment(false);
+    }
+  };
+
+  const formatCardNumber = (value: string) => {
+    const v = value.replace(/\s+/g, "").replace(/[^0-9]/gi, "");
+    const matches = v.match(/\d{4,16}/g);
+    const match = (matches && matches[0]) || "";
+    const parts = [];
+    for (let i = 0, len = match.length; i < len; i += 4) {
+      parts.push(match.substring(i, i + 4));
+    }
+    return parts.length ? parts.join(" ") : value;
+  };
+
+  const formatExpiry = (value: string) => {
+    const v = value.replace(/\s+/g, "").replace(/[^0-9]/gi, "");
+    if (v.length >= 2) {
+      return v.substring(0, 2) + "/" + v.substring(2, 4);
+    }
+    return v;
+  };
 
   const currentStepIndex = signupSteps.findIndex(s => s.id === signupStep);
   const currentPlan = plans.find(p => p.tier === selectedPlan);
@@ -997,16 +1137,222 @@ export default function AuthPage() {
             </Card>
           )}
 
-          {/* Step: Setup (Bank + Payment Combined) */}
-          {signupStep === "setup" && (
+          {/* Step: Bills Upload */}
+          {signupStep === "bills" && (
+            <Card className="animate-scale-in">
+              <CardHeader className="text-center pb-4">
+                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-accent/10 text-accent">
+                  <Receipt className="h-6 w-6" />
+                </div>
+                <CardTitle className="text-xl">Add Your Bills</CardTitle>
+                <CardDescription className="text-sm">
+                  Add bills you want AutoFloat to help cover
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Added Bills List */}
+                {bills.length > 0 && (
+                  <div className="space-y-2">
+                    {bills.map((bill, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between rounded-lg border border-border bg-secondary/30 p-3"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent/10">
+                            <Receipt className="h-5 w-5 text-accent" />
+                          </div>
+                          <div>
+                            <p className="font-medium text-sm text-foreground">{bill.name}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {billCategories.find(c => c.value === bill.category)?.label} • Due: {bill.dueDate}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="font-semibold text-foreground">${parseFloat(bill.amount).toFixed(2)}</span>
+                          <button
+                            onClick={() => removeBill(index)}
+                            className="text-muted-foreground hover:text-destructive transition-colors"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                    <div className="flex items-center justify-between pt-2 border-t border-border">
+                      <span className="font-medium text-foreground">Total Monthly Bills</span>
+                      <span className="font-bold text-accent">
+                        ${bills.reduce((sum, b) => sum + parseFloat(b.amount || "0"), 0).toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Add Bill Form */}
+                <div className="space-y-3 border border-border rounded-lg p-4">
+                  <div className="flex items-center gap-2">
+                    <Plus className="h-4 w-4 text-accent" />
+                    <span className="font-medium text-sm text-foreground">Add a Bill</span>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <Label className="text-xs">Bill Name</Label>
+                      <Input
+                        placeholder="e.g., Electric Bill"
+                        value={newBillName}
+                        onChange={(e) => setNewBillName(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Amount</Label>
+                      <div className="relative">
+                        <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          type="number"
+                          placeholder="0.00"
+                          value={newBillAmount}
+                          onChange={(e) => setNewBillAmount(e.target.value)}
+                          className="pl-9"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <Label className="text-xs">Category</Label>
+                      <Select value={newBillCategory} onValueChange={setNewBillCategory}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {billCategories.map((cat) => (
+                            <SelectItem key={cat.value} value={cat.value}>
+                              {cat.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Due Date</Label>
+                      <Input
+                        type="date"
+                        value={newBillDueDate}
+                        onChange={(e) => setNewBillDueDate(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    onClick={addBill}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Bill
+                  </Button>
+                </div>
+
+                <div className="flex gap-2 pt-2">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => setSignupStep("payment")}
+                    disabled={isLoading}
+                  >
+                    Skip
+                  </Button>
+                  <Button
+                    variant="accent"
+                    className="flex-1"
+                    onClick={handleBillsSubmit}
+                    disabled={isLoading || bills.length === 0}
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        Continue
+                        <ArrowRight className="h-4 w-4 ml-2" />
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Step: Payment */}
+          {signupStep === "payment" && (
             <Card className="animate-scale-in">
               <CardHeader className="text-center pb-4">
                 <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-accent/10 text-accent">
                   <CreditCard className="h-6 w-6" />
                 </div>
-                <CardTitle className="text-xl">Complete Setup</CardTitle>
+                <CardTitle className="text-xl">Payment</CardTitle>
                 <CardDescription className="text-sm">
-                  Connect bank and process first payment
+                  Pay for your subscription to continue
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Payment Summary */}
+                <div className="rounded-lg border border-border bg-secondary/30 p-4 space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Plan</span>
+                    <span className="font-medium text-foreground">{currentPlan?.name}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Monthly Fee</span>
+                    <span className="font-medium text-foreground">${currentPlan?.price}/mo</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">First 2 Installments</span>
+                    <span className="font-medium text-foreground">${((currentPlan?.price || 0) / 2).toFixed(2)}</span>
+                  </div>
+                  <hr className="border-border" />
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-foreground">Total Due Today</span>
+                    <span className="font-bold text-accent text-lg">${((currentPlan?.price || 0) + ((currentPlan?.price || 0) / 2)).toFixed(2)}</span>
+                  </div>
+                </div>
+
+                <Button
+                  variant="accent"
+                  className="w-full"
+                  onClick={() => setShowPaymentModal(true)}
+                >
+                  <CreditCard className="h-4 w-4 mr-2" />
+                  Enter Card Details
+                </Button>
+
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => setSignupStep("setup")}
+                >
+                  Skip for now
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Step: Setup (Bank Connection) */}
+          {signupStep === "setup" && (
+            <Card className="animate-scale-in">
+              <CardHeader className="text-center pb-4">
+                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-accent/10 text-accent">
+                  <Building2 className="h-6 w-6" />
+                </div>
+                <CardTitle className="text-xl">Link Your Bank</CardTitle>
+                <CardDescription className="text-sm">
+                  Connect your bank for ACH settlements
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -1066,25 +1412,10 @@ export default function AuthPage() {
                   </div>
                 </div>
 
-                {/* Payment Summary */}
-                <div className="rounded-lg border border-border bg-secondary/30 p-4 space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Plan</span>
-                    <span className="font-medium text-foreground">{currentPlan?.name}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Monthly Fee</span>
-                    <span className="font-medium text-foreground">${currentPlan?.price}/mo</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">First 2 Installments</span>
-                    <span className="font-medium text-foreground">${((currentPlan?.price || 0) / 2).toFixed(2)}</span>
-                  </div>
-                  <hr className="border-border" />
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold text-foreground">Total Due Today</span>
-                    <span className="font-bold text-accent">${((currentPlan?.price || 0) + ((currentPlan?.price || 0) / 2)).toFixed(2)}</span>
-                  </div>
+                <div className="rounded-lg border border-border bg-secondary/30 p-3">
+                  <p className="text-xs text-muted-foreground text-center">
+                    Your bank will be used for automatic ACH settlements based on your selected schedule.
+                  </p>
                 </div>
                 
                 <div className="flex gap-2">
@@ -1105,11 +1436,11 @@ export default function AuthPage() {
                     {isLoading ? (
                       <>
                         <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                        Processing...
+                        Connecting...
                       </>
                     ) : (
                       <>
-                        Pay & Activate
+                        Connect & Finish
                         <CheckCircle2 className="h-4 w-4 ml-2" />
                       </>
                     )}
@@ -1166,6 +1497,98 @@ export default function AuthPage() {
           )}
         </div>
       </div>
+
+      {/* Credit Card Payment Modal */}
+      <Dialog open={showPaymentModal} onOpenChange={setShowPaymentModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CreditCard className="h-5 w-5 text-accent" />
+              Enter Payment Details
+            </DialogTitle>
+            <DialogDescription>
+              Your card will be charged ${((currentPlan?.price || 0) + ((currentPlan?.price || 0) / 2)).toFixed(2)} today.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 pt-4">
+            <div className="space-y-2">
+              <Label>Cardholder Name</Label>
+              <Input
+                placeholder="John Doe"
+                value={cardName}
+                onChange={(e) => setCardName(e.target.value)}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label>Card Number</Label>
+              <div className="relative">
+                <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="1234 5678 9012 3456"
+                  value={cardNumber}
+                  onChange={(e) => setCardNumber(formatCardNumber(e.target.value))}
+                  maxLength={19}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Expiry Date</Label>
+                <Input
+                  placeholder="MM/YY"
+                  value={cardExpiry}
+                  onChange={(e) => setCardExpiry(formatExpiry(e.target.value))}
+                  maxLength={5}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>CVC</Label>
+                <Input
+                  placeholder="123"
+                  value={cardCvc}
+                  onChange={(e) => setCardCvc(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                  maxLength={4}
+                  type="password"
+                />
+              </div>
+            </div>
+            
+            <div className="rounded-lg border border-border bg-secondary/30 p-3 space-y-1">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Amount to charge</span>
+                <span className="font-bold text-accent">${((currentPlan?.price || 0) + ((currentPlan?.price || 0) / 2)).toFixed(2)}</span>
+              </div>
+            </div>
+            
+            <Button
+              variant="accent"
+              className="w-full"
+              onClick={handleCreditCardPayment}
+              disabled={processingPayment}
+            >
+              {processingPayment ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Processing Payment...
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="h-4 w-4 mr-2" />
+                  Pay ${((currentPlan?.price || 0) + ((currentPlan?.price || 0) / 2)).toFixed(2)}
+                </>
+              )}
+            </Button>
+            
+            <p className="text-xs text-muted-foreground text-center">
+              Your payment is secured with 256-bit SSL encryption.
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
