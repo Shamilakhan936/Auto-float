@@ -7,12 +7,27 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2 } from "lucide-react";
 
 const BILL_CATEGORIES = [
-  { value: "rent", label: "Rent" },
+  { value: "rent", label: "Rent/Mortgage" },
   { value: "utilities", label: "Utilities" },
-  { value: "phone", label: "Phone" },
+  { value: "phone", label: "Phone/Internet" },
   { value: "insurance", label: "Insurance" },
   { value: "childcare", label: "Childcare" },
+  { value: "daycare", label: "Daycare" },
   { value: "auto", label: "Auto" },
+  { value: "tolls", label: "Tolls" },
+  { value: "parking", label: "Parking Tickets" },
+  { value: "beauty", label: "Beauty/Personal Care" },
+  { value: "groceries", label: "Groceries" },
+  { value: "medical", label: "Medical/Healthcare" },
+  { value: "subscriptions", label: "Subscriptions" },
+  { value: "home_maintenance", label: "Home Maintenance" },
+  { value: "pest_control", label: "Pest Control" },
+  { value: "lawn_care", label: "Lawn Care" },
+  { value: "security", label: "Home Security" },
+  { value: "hoa", label: "HOA Fees" },
+  { value: "trash", label: "Trash/Recycling" },
+  { value: "water", label: "Water/Sewer" },
+  { value: "other", label: "Other" },
 ];
 
 interface AddBillDialogProps {
