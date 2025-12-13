@@ -25,9 +25,9 @@ const steps = [
 
 export function HowItWorks() {
   return (
-    <section className="py-20 md:py-32">
+    <section className="py-12 md:py-16">
       <div className="container px-4">
-        <div className="mx-auto max-w-2xl text-center mb-16">
+        <div className="mx-auto max-w-2xl text-center mb-10">
           <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
             How Auto+ Works
           </h2>
@@ -37,7 +37,7 @@ export function HowItWorks() {
         </div>
         
         <div className="mx-auto max-w-4xl">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {steps.map((step, index) => (
               <div
                 key={step.number}

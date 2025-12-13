@@ -4,9 +4,9 @@ import { ArrowRight } from "lucide-react";
 
 export function CTA() {
   return (
-    <section className="py-20 md:py-32">
+    <section className="py-12 md:py-16">
       <div className="container px-4">
-        <div className="relative overflow-hidden rounded-3xl bg-black px-8 py-16 md:px-16 md:py-24">
+        <div className="relative overflow-hidden rounded-3xl bg-black px-6 py-12 md:px-12 md:py-16">
           {/* Decorative elements */}
           <div className="absolute top-0 left-0 w-64 h-64 bg-white/5 rounded-full blur-3xl" />
           <div className="absolute bottom-0 right-0 w-96 h-96 bg-white/5 rounded-full blur-3xl" />
