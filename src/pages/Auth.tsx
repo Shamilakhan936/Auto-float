@@ -76,7 +76,7 @@ const signUpSchema = z.object({
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
-type SignupStep = "account" | "verify" | "plan" | "bills" | "payment" | "setup" | "complete";
+type SignupStep = "account" | "verify" | "plan" | "bills" | "payment" | "complete";
 
 const plans = [
   {
@@ -502,7 +502,6 @@ export default function AuthPage() {
     { id: "plan", label: "Plan" },
     { id: "bills", label: "Bills" },
     { id: "payment", label: "Payment" },
-    { id: "setup", label: "Bank" },
   ];
 
   const addBill = () => {
@@ -582,7 +581,7 @@ export default function AuthPage() {
       });
 
       setShowPaymentModal(false);
-      setSignupStep("setup");
+      setSignupStep("complete");
     } catch (error) {
       toast({
         title: "Payment failed",
@@ -1393,117 +1392,10 @@ export default function AuthPage() {
                 <Button
                   variant="outline"
                   className="w-full"
-                  onClick={() => setSignupStep("setup")}
+                  onClick={() => setSignupStep("complete")}
                 >
                   Skip for now
                 </Button>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Step: Setup (Bank Connection) */}
-          {signupStep === "setup" && (
-            <Card className="animate-scale-in">
-              <CardHeader className="text-center pb-4">
-                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-accent/10 text-accent">
-                  <Building2 className="h-6 w-6" />
-                </div>
-                <CardTitle className="text-xl">Link Your Bank</CardTitle>
-                <CardDescription className="text-sm">
-                  Connect your bank for ACH settlements
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Bank Selection */}
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Building2 className="h-4 w-4 text-accent" />
-                    <span className="font-medium text-sm text-foreground">Select Your Bank</span>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2">
-                    {banks.map((bank) => (
-                      <button
-                        key={bank.id}
-                        onClick={() => setSelectedBank(bank.id)}
-                        className={cn(
-                          "rounded-lg border-2 p-2 text-center transition-all",
-                          selectedBank === bank.id
-                            ? "border-accent bg-accent/5"
-                            : "border-border hover:border-accent/30"
-                        )}
-                      >
-                        <span className="text-lg block">{bank.logo}</span>
-                        <p className="text-xs font-medium text-foreground truncate">{bank.name}</p>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Settlement Timing */}
-                <div className="space-y-3">
-                  <Label className="text-sm">Payment Schedule</Label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      onClick={() => setSettlementTiming("payday")}
-                      className={cn(
-                        "rounded-lg border-2 p-3 text-left transition-all",
-                        settlementTiming === "payday"
-                          ? "border-accent bg-accent/5"
-                          : "border-border hover:border-accent/30"
-                      )}
-                    >
-                      <p className="font-medium text-sm text-foreground">Bi-Weekly</p>
-                      <p className="text-xs text-muted-foreground">Every 2 weeks</p>
-                    </button>
-                    <button
-                      onClick={() => setSettlementTiming("month-end")}
-                      className={cn(
-                        "rounded-lg border-2 p-3 text-left transition-all",
-                        settlementTiming === "month-end"
-                          ? "border-accent bg-accent/5"
-                          : "border-border hover:border-accent/30"
-                      )}
-                    >
-                      <p className="font-medium text-sm text-foreground">Weekly</p>
-                      <p className="text-xs text-muted-foreground">Every week</p>
-                    </button>
-                  </div>
-                </div>
-
-                <div className="rounded-lg border border-border bg-secondary/30 p-3">
-                  <p className="text-xs text-muted-foreground text-center">
-                    Your bank will be used for automatic ACH settlements based on your selected schedule.
-                  </p>
-                </div>
-                
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    className="flex-1"
-                    onClick={skipSetup}
-                    disabled={isLoading}
-                  >
-                    Skip
-                  </Button>
-                  <Button
-                    variant="accent"
-                    className="flex-1"
-                    onClick={handleBankConnection}
-                    disabled={isLoading}
-                  >
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                        Connecting...
-                      </>
-                    ) : (
-                      <>
-                        Connect & Finish
-                        <CheckCircle2 className="h-4 w-4 ml-2" />
-                      </>
-                    )}
-                  </Button>
-                </div>
               </CardContent>
             </Card>
           )}
