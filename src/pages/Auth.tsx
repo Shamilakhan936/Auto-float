@@ -1481,13 +1481,13 @@ export default function AuthPage() {
               </h1>
               
               <p className="text-lg text-muted-foreground mb-8 max-w-md mx-auto">
-                Your Auto+ subscription is now active. Start adding bills to your dashboard.
+                Your AutoFloat subscription is now active. Start adding bills to your dashboard.
               </p>
               
               <div className="rounded-2xl border border-accent/30 bg-accent/5 p-8 mb-8">
                 <Badge variant="verified" className="mb-4">
                   <Car className="h-4 w-4 mr-2" />
-                  Auto+ Verified
+                  AutoFloat Verified
                 </Badge>
                 <p className="text-sm text-muted-foreground mb-2">Your monthly access</p>
                 <p className="text-5xl font-bold text-accent">${currentPlan?.maxAccess.toLocaleString() || "3,000"}</p>

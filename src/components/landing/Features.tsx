@@ -11,7 +11,7 @@ const features = [
   {
     icon: CreditCard,
     title: "Tiered Subscriptions",
-    description: "Choose from Basic, Plus, or Auto+ plans with monthly access limits from $500 to $3,000.",
+    description: "Choose from Basic, Plus, or AutoFloat plans with monthly access limits from $500 to $3,000.",
   },
   {
     icon: Car,

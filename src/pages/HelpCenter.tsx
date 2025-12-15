@@ -23,7 +23,7 @@ const faqData = [
       { q: "How do I sign up for AutoFloat?", a: "To sign up, click 'Get Started' on our homepage, create an account with your email and password, then follow the onboarding steps to verify your identity, select a plan, and connect your bank account." },
       { q: "What documents do I need to sign up?", a: "You'll need a valid driver's license and a recent paystub for identity verification and income confirmation. These documents are uploaded securely during the onboarding process." },
       { q: "Which bill categories are supported?", a: "AutoFloat supports rent, utilities, phone bills, insurance, childcare, and auto-related expenses. Cash advances, P2P transfers, gambling, crypto, and investments are not supported." },
-      { q: "What are the subscription tiers?", a: "We offer three tiers: Basic ($15/month, up to $200 access), Plus ($25/month, up to $300 access), and Auto+ ($75/month, up to $1,000 access). All plans include auto verification features." },
+      { q: "What are the subscription tiers?", a: "We offer three tiers: Basic ($15/month, up to $200 access), Plus ($25/month, up to $300 access), and AutoFloat ($75/month, up to $1,000 access). All plans include auto verification features." },
       { q: "Can I skip steps during signup?", a: "Yes, you can skip the vehicle verification and bank connection steps during signup. However, connecting these later is required to fully use AutoFloat's features." },
     ]
   },
@@ -42,7 +42,7 @@ const faqData = [
     category: "Auto Verification",
     questions: [
       { q: "How do I verify my vehicle?", a: "During onboarding or from your dashboard, enter your VIN (Vehicle Identification Number) or license plate number. Our system will verify your vehicle ownership automatically." },
-      { q: "What does auto verification unlock?", a: "Auto verification unlocks higher access limits and grants you a verified badge on your account. It's required for the Auto+ tier's full benefits." },
+      { q: "What does auto verification unlock?", a: "Auto verification unlocks higher access limits and grants you a verified badge on your account. It's required for the AutoFloat tier's full benefits." },
       { q: "Is auto insurance verification required?", a: "Yes, we verify your auto insurance to ensure your vehicle is properly covered. This is part of our verification process and helps maintain account access." },
       { q: "What happens if my insurance lapses?", a: "If your insurance lapses, your account access will be automatically paused. Once you update your insurance information and it's verified, access is restored automatically." },
       { q: "Do you place a lien on my vehicle?", a: "No. AutoFloat never places a lien on your vehicle. Your car remains fully yours with no encumbrances." },

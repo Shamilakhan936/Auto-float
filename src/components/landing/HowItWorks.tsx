@@ -4,7 +4,7 @@ const steps = [
   {
     number: "01",
     title: "Choose Your Plan",
-    description: "Select from Basic, Plus, or Auto+ tiers based on your monthly bill coverage needs.",
+    description: "Select from Basic, Plus, or AutoFloat tiers based on your monthly bill coverage needs.",
   },
   {
     number: "02",
@@ -29,7 +29,7 @@ export function HowItWorks() {
       <div className="container px-4">
         <div className="mx-auto max-w-2xl text-center mb-10">
           <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-            How Auto+ Works
+            How AutoFloat Works
           </h2>
           <p className="mt-4 text-lg text-muted-foreground">
             Get started in minutes with our simple four-step process.
