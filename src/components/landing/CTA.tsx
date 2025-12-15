@@ -16,7 +16,7 @@ export function CTA() {
               Ready to simplify your bills?
             </h2>
             <p className="mt-6 text-lg text-white/80">
-              Join thousands of users who trust Auto+ for predictable, stress-free bill management.
+              Join thousands of users who trust AutoFloat for predictable, stress-free bill management.
             </p>
             <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link to="/plans">

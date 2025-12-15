@@ -9,26 +9,26 @@ const pressReleases = [
   {
     id: 1,
     date: "December 10, 2024",
-    title: "Auto+ Reaches 100,000 Active Subscribers",
+    title: "AutoFloat Reaches 100,000 Active Subscribers",
     excerpt: "Major milestone demonstrates growing demand for subscription-based bill management solutions.",
   },
   {
     id: 2,
     date: "November 15, 2024",
-    title: "Auto+ Launches Auto Verification Feature",
+    title: "AutoFloat Launches Auto Verification Feature",
     excerpt: "New feature allows users to unlock higher access limits by verifying vehicle ownership.",
   },
   {
     id: 3,
     date: "October 1, 2024",
-    title: "Auto+ Raises $25M Series A",
+    title: "AutoFloat Raises $25M Series A",
     excerpt: "Funding round led by top fintech investors will accelerate product development and expansion.",
   },
   {
     id: 4,
     date: "August 20, 2024",
-    title: "Auto+ Named 'Best Fintech Startup' at Innovation Awards",
-    excerpt: "Recognition highlights Auto+'s commitment to transparent, user-friendly financial solutions.",
+    title: "AutoFloat Named 'Best Fintech Startup' at Innovation Awards",
+    excerpt: "Recognition highlights AutoFloat's commitment to transparent, user-friendly financial solutions.",
   },
 ];
 
@@ -44,7 +44,7 @@ export default function PressPage() {
             <div className="mx-auto max-w-3xl text-center">
               <Badge variant="accent" className="mb-4">Press & Media</Badge>
               <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl md:text-5xl mb-6">
-                Auto+ in the News
+                AutoFloat in the News
               </h1>
               <p className="text-lg text-muted-foreground">
                 Stay up to date with the latest news, announcements, and media coverage.
@@ -101,7 +101,7 @@ export default function PressPage() {
                   For press inquiries, please contact our communications team.
                 </p>
                 <Button variant="accent">
-                  press@autoplus.com
+                  press@autofloat.com
                 </Button>
               </div>
             </div>

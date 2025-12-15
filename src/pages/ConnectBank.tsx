@@ -100,7 +100,7 @@ export default function ConnectBankPage() {
 
       toast({
         title: "Subscription activated!",
-        description: "Your Auto+ subscription is now active.",
+        description: "Your AutoFloat subscription is now active.",
       });
 
       setStep("complete");
@@ -291,7 +291,7 @@ export default function ConnectBankPage() {
               <CardHeader className="text-center">
                 <CardTitle className="text-2xl">Activate Your Subscription</CardTitle>
                 <CardDescription>
-                  Review your settings and activate Auto+.
+                  Review your settings and activate AutoFloat.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -318,7 +318,7 @@ export default function ConnectBankPage() {
                     <div className="flex items-center gap-3">
                       <span className="text-sm text-muted-foreground">Monthly Plan</span>
                     </div>
-                    <span className="font-medium text-accent">$40/month • Auto+</span>
+                    <span className="font-medium text-accent">$40/month • AutoFloat</span>
                   </div>
                 </div>
                 
@@ -369,7 +369,7 @@ export default function ConnectBankPage() {
               </h1>
               
               <p className="text-lg text-muted-foreground mb-8 max-w-md mx-auto">
-                Your Auto+ subscription is now active. Start adding bills to your dashboard.
+                Your AutoFloat subscription is now active. Start adding bills to your dashboard.
               </p>
               
               <div className="rounded-2xl border border-accent/30 bg-accent/5 p-8 mb-8">
