@@ -182,6 +182,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          car_insurance_url: string | null
           created_at: string
           documents_verified: boolean | null
           drivers_license_url: string | null
@@ -196,6 +197,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          car_insurance_url?: string | null
           created_at?: string
           documents_verified?: boolean | null
           drivers_license_url?: string | null
@@ -210,6 +212,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          car_insurance_url?: string | null
           created_at?: string
           documents_verified?: boolean | null
           drivers_license_url?: string | null

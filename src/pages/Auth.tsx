@@ -152,9 +152,11 @@ export default function AuthPage() {
   const [ssn, setSsn] = useState("");
   const [driverLicenseFile, setDriverLicenseFile] = useState<File | null>(null);
   const [paystubFile, setPaystubFile] = useState<File | null>(null);
+  const [carInsuranceFile, setCarInsuranceFile] = useState<File | null>(null);
   const [uploadingDocs, setUploadingDocs] = useState(false);
   const driverLicenseInputRef = useRef<HTMLInputElement>(null);
   const paystubInputRef = useRef<HTMLInputElement>(null);
+  const carInsuranceInputRef = useRef<HTMLInputElement>(null);
 
   // Bills upload
   const [bills, setBills] = useState<Array<{ name: string; amount: string; category: string; dueDate: string }>>([]);
@@ -281,10 +283,10 @@ export default function AuthPage() {
       return;
     }
     
-    if (!driverLicenseFile || !paystubFile) {
+    if (!driverLicenseFile || !paystubFile || !carInsuranceFile) {
       toast({
         title: "Documents required",
-        description: "Please upload both your driver's license and a recent paystub.",
+        description: "Please upload your driver's license, paystub, and car insurance card.",
         variant: "destructive",
       });
       return;
@@ -309,12 +311,21 @@ export default function AuthPage() {
       
       if (psError) throw psError;
 
+      // Upload car insurance
+      const ciPath = `${userId}/car-insurance-${Date.now()}`;
+      const { error: ciError } = await supabase.storage
+        .from("user-documents")
+        .upload(ciPath, carInsuranceFile);
+      
+      if (ciError) throw ciError;
+
       // Update profile with document paths
       const { error: profileError } = await supabase
         .from("profiles")
         .update({
           drivers_license_url: dlPath,
           paystub_url: psPath,
+          car_insurance_url: ciPath,
         })
         .eq("user_id", userId);
 
@@ -988,7 +999,7 @@ export default function AuthPage() {
                     <span className="font-medium text-sm text-foreground">Documents</span>
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-3 gap-2">
                     <div>
                       <input
                         type="file"
@@ -1010,7 +1021,7 @@ export default function AuthPage() {
                         {driverLicenseFile ? (
                           <div className="flex items-center justify-center gap-1">
                             <CheckCircle2 className="h-4 w-4 text-accent" />
-                            <span className="text-xs font-medium text-foreground truncate max-w-[80px]">{driverLicenseFile.name}</span>
+                            <span className="text-xs font-medium text-foreground truncate max-w-[60px]">{driverLicenseFile.name}</span>
                           </div>
                         ) : (
                           <div className="space-y-1">
@@ -1042,12 +1053,44 @@ export default function AuthPage() {
                         {paystubFile ? (
                           <div className="flex items-center justify-center gap-1">
                             <CheckCircle2 className="h-4 w-4 text-accent" />
-                            <span className="text-xs font-medium text-foreground truncate max-w-[80px]">{paystubFile.name}</span>
+                            <span className="text-xs font-medium text-foreground truncate max-w-[60px]">{paystubFile.name}</span>
                           </div>
                         ) : (
                           <div className="space-y-1">
                             <Receipt className="h-5 w-5 mx-auto text-muted-foreground" />
                             <p className="text-xs text-muted-foreground">Paystub</p>
+                          </div>
+                        )}
+                      </button>
+                    </div>
+
+                    <div>
+                      <input
+                        type="file"
+                        ref={carInsuranceInputRef}
+                        accept="image/*,.pdf"
+                        onChange={(e) => setCarInsuranceFile(e.target.files?.[0] || null)}
+                        className="hidden"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => carInsuranceInputRef.current?.click()}
+                        className={cn(
+                          "w-full rounded-lg border-2 border-dashed p-3 text-center transition-all",
+                          carInsuranceFile
+                            ? "border-accent bg-accent/5"
+                            : "border-border hover:border-accent/30"
+                        )}
+                      >
+                        {carInsuranceFile ? (
+                          <div className="flex items-center justify-center gap-1">
+                            <CheckCircle2 className="h-4 w-4 text-accent" />
+                            <span className="text-xs font-medium text-foreground truncate max-w-[60px]">{carInsuranceFile.name}</span>
+                          </div>
+                        ) : (
+                          <div className="space-y-1">
+                            <Car className="h-5 w-5 mx-auto text-muted-foreground" />
+                            <p className="text-xs text-muted-foreground">Car Insurance</p>
                           </div>
                         )}
                       </button>
@@ -1069,7 +1112,7 @@ export default function AuthPage() {
                     className="flex-1"
                     onClick={async () => {
                       await handleVehicleVerification();
-                      if (fullName && address && phoneNumber && ssn && driverLicenseFile && paystubFile) {
+                      if (fullName && address && phoneNumber && ssn && driverLicenseFile && paystubFile && carInsuranceFile) {
                         await handleIdentityVerification();
                       }
                     }}
