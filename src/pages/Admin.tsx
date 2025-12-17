@@ -1,7 +1,5 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
-import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Users, FileText, TrendingUp, Shield, Search, ArrowLeft, Car, CheckCircle, XCircle, DollarSign, Activity } from "lucide-react";
+import { Users, FileText, Shield, Search, ArrowLeft, Car, CheckCircle, XCircle, DollarSign, Activity } from "lucide-react";
 import { format } from "date-fns";
 
 interface Profile {
@@ -58,14 +56,13 @@ interface Vehicle {
 
 const Admin = () => {
   const navigate = useNavigate();
-  const { user, loading: authLoading } = useAuth();
-  const { isAdmin, loading: adminLoading } = useAdminCheck();
   
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [bills, setBills] = useState<Bill[]>([]);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     totalUsers: 0,
     totalBills: 0,
@@ -78,80 +75,70 @@ const Admin = () => {
   });
 
   useEffect(() => {
-    if (!authLoading && !user) {
-      navigate("/auth");
-    }
-  }, [user, authLoading, navigate]);
-
-  useEffect(() => {
-    if (!adminLoading && !isAdmin && user) {
-      navigate("/dashboard");
-    }
-  }, [isAdmin, adminLoading, user, navigate]);
-
-  useEffect(() => {
-    if (isAdmin) {
-      fetchAdminData();
-    }
-  }, [isAdmin]);
+    fetchAdminData();
+  }, []);
 
   const fetchAdminData = async () => {
-    // Fetch profiles
-    const { data: profilesData } = await supabase
-      .from("profiles")
-      .select("*")
-      .order("created_at", { ascending: false });
-    
-    if (profilesData) {
-      setProfiles(profilesData);
-      setStats(prev => ({ ...prev, totalUsers: profilesData.length }));
-    }
+    try {
+      // Fetch profiles
+      const { data: profilesData } = await supabase
+        .from("profiles")
+        .select("*")
+        .order("created_at", { ascending: false });
+      
+      if (profilesData) {
+        setProfiles(profilesData);
+        setStats(prev => ({ ...prev, totalUsers: profilesData.length }));
+      }
 
-    // Fetch bills
-    const { data: billsData } = await supabase
-      .from("bills")
-      .select("*")
-      .order("created_at", { ascending: false });
-    
-    if (billsData) {
-      setBills(billsData);
-      const totalRevenue = billsData.reduce((sum, bill) => sum + Number(bill.amount), 0);
-      const pendingBills = billsData.filter(b => b.status === 'pending').length;
-      const paidBills = billsData.filter(b => b.status === 'paid').length;
-      setStats(prev => ({ 
-        ...prev, 
-        totalBills: billsData.length,
-        totalRevenue,
-        pendingBills,
-        paidBills
-      }));
-    }
+      // Fetch bills
+      const { data: billsData } = await supabase
+        .from("bills")
+        .select("*")
+        .order("created_at", { ascending: false });
+      
+      if (billsData) {
+        setBills(billsData);
+        const totalRevenue = billsData.reduce((sum, bill) => sum + Number(bill.amount), 0);
+        const pendingBills = billsData.filter(b => b.status === 'pending').length;
+        const paidBills = billsData.filter(b => b.status === 'paid').length;
+        setStats(prev => ({ 
+          ...prev, 
+          totalBills: billsData.length,
+          totalRevenue,
+          pendingBills,
+          paidBills
+        }));
+      }
 
-    // Fetch subscriptions
-    const { data: subsData } = await supabase
-      .from("subscriptions")
-      .select("*");
-    
-    if (subsData) {
-      setSubscriptions(subsData);
-      const activeCount = subsData.filter(s => s.is_active).length;
-      setStats(prev => ({ ...prev, activeSubscriptions: activeCount }));
-    }
+      // Fetch subscriptions
+      const { data: subsData } = await supabase
+        .from("subscriptions")
+        .select("*");
+      
+      if (subsData) {
+        setSubscriptions(subsData);
+        const activeCount = subsData.filter(s => s.is_active).length;
+        setStats(prev => ({ ...prev, activeSubscriptions: activeCount }));
+      }
 
-    // Fetch vehicles
-    const { data: vehiclesData } = await supabase
-      .from("vehicles")
-      .select("*")
-      .order("created_at", { ascending: false });
-    
-    if (vehiclesData) {
-      setVehicles(vehiclesData);
-      const verifiedCount = vehiclesData.filter(v => v.is_verified).length;
-      setStats(prev => ({ 
-        ...prev, 
-        totalVehicles: vehiclesData.length,
-        verifiedVehicles: verifiedCount
-      }));
+      // Fetch vehicles
+      const { data: vehiclesData } = await supabase
+        .from("vehicles")
+        .select("*")
+        .order("created_at", { ascending: false });
+      
+      if (vehiclesData) {
+        setVehicles(vehiclesData);
+        const verifiedCount = vehiclesData.filter(v => v.is_verified).length;
+        setStats(prev => ({ 
+          ...prev, 
+          totalVehicles: vehiclesData.length,
+          verifiedVehicles: verifiedCount
+        }));
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -173,16 +160,12 @@ const Admin = () => {
     vehicle.model?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  if (authLoading || adminLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
-  }
-
-  if (!isAdmin) {
-    return null;
   }
 
   return (

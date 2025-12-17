@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Menu, X, Car, LogOut, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
-import { useAdminCheck } from "@/hooks/useAdminCheck";
 
 const navLinks = [
   { href: "/", label: "Home" },
@@ -16,7 +15,6 @@ const navLinks = [
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, signOut } = useAuth();
-  const { isAdmin } = useAdminCheck();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -54,14 +52,12 @@ export function Header() {
         </nav>
 
         <div className="hidden md:flex items-center gap-3">
-          {isAdmin && (
-            <Link to="/admin">
-              <Button variant="ghost" size="sm" className="text-accent">
-                <Shield className="h-4 w-4 mr-2" />
-                Admin
-              </Button>
-            </Link>
-          )}
+          <Link to="/admin">
+            <Button variant="ghost" size="sm" className="text-accent">
+              <Shield className="h-4 w-4 mr-2" />
+              Admin
+            </Button>
+          </Link>
           {user ? (
             <>
               <span className="text-sm text-muted-foreground">
@@ -122,14 +118,12 @@ export function Header() {
               </Link>
             ))}
             <div className="flex flex-col gap-3 pt-4 border-t border-border">
-              {isAdmin && (
-                <Link to="/admin" onClick={() => setMobileMenuOpen(false)}>
-                  <Button variant="outline" className="w-full text-accent">
-                    <Shield className="h-4 w-4 mr-2" />
-                    Admin Panel
-                  </Button>
-                </Link>
-              )}
+              <Link to="/admin" onClick={() => setMobileMenuOpen(false)}>
+                <Button variant="outline" className="w-full text-accent">
+                  <Shield className="h-4 w-4 mr-2" />
+                  Admin Panel
+                </Button>
+              </Link>
               {user ? (
                 <>
                   <p className="text-sm text-muted-foreground">{user.email}</p>
