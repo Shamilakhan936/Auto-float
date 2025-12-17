@@ -1,19 +1,20 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 
-  Users, FileText, Shield, Search, ArrowLeft, Car, CheckCircle, XCircle, 
-  DollarSign, Activity, Download, ChevronLeft, ChevronRight, CreditCard,
+  Users, FileText, Search, Car, CreditCard,
   Landmark, Gift, Calendar
 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { AdminStats } from "@/components/admin/AdminStats";
+import { AdminHeader } from "@/components/admin/AdminHeader";
+import { AdminTableWrapper, paginate } from "@/components/admin/AdminTableWrapper";
+import { EmptyState } from "@/components/admin/EmptyState";
 
 interface Profile {
   id: string;
@@ -106,8 +107,6 @@ interface Referral {
 const ITEMS_PER_PAGE = 10;
 
 const Admin = () => {
-  const navigate = useNavigate();
-  
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [bills, setBills] = useState<Bill[]>([]);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
@@ -144,103 +143,46 @@ const Admin = () => {
 
   const fetchAdminData = async () => {
     try {
-      // Fetch profiles
-      const { data: profilesData } = await supabase
-        .from("profiles")
-        .select("*")
-        .order("created_at", { ascending: false });
-      
-      if (profilesData) {
-        setProfiles(profilesData);
-        setStats(prev => ({ ...prev, totalUsers: profilesData.length }));
+      const [profilesRes, billsRes, subsRes, vehiclesRes, plansRes, installmentsRes, bankRes, referralsRes] = await Promise.all([
+        supabase.from("profiles").select("*").order("created_at", { ascending: false }),
+        supabase.from("bills").select("*").order("created_at", { ascending: false }),
+        supabase.from("subscriptions").select("*"),
+        supabase.from("vehicles").select("*").order("created_at", { ascending: false }),
+        supabase.from("payment_plans").select("*").order("created_at", { ascending: false }),
+        supabase.from("payment_installments").select("*").order("due_date", { ascending: true }),
+        supabase.from("bank_accounts").select("*").order("created_at", { ascending: false }),
+        supabase.from("referrals").select("*").order("created_at", { ascending: false })
+      ]);
+
+      if (profilesRes.data) {
+        setProfiles(profilesRes.data);
+        setStats(prev => ({ ...prev, totalUsers: profilesRes.data.length }));
       }
 
-      // Fetch bills
-      const { data: billsData } = await supabase
-        .from("bills")
-        .select("*")
-        .order("created_at", { ascending: false });
-      
-      if (billsData) {
-        setBills(billsData);
-        const totalRevenue = billsData.reduce((sum, bill) => sum + Number(bill.amount), 0);
-        const pendingBills = billsData.filter(b => b.status === 'pending').length;
-        const paidBills = billsData.filter(b => b.status === 'paid').length;
-        setStats(prev => ({ 
-          ...prev, 
-          totalBills: billsData.length,
-          totalRevenue,
-          pendingBills,
-          paidBills
-        }));
+      if (billsRes.data) {
+        setBills(billsRes.data);
+        const totalRevenue = billsRes.data.reduce((sum, bill) => sum + Number(bill.amount), 0);
+        const pendingBills = billsRes.data.filter(b => b.status === 'pending').length;
+        const paidBills = billsRes.data.filter(b => b.status === 'paid').length;
+        setStats(prev => ({ ...prev, totalBills: billsRes.data.length, totalRevenue, pendingBills, paidBills }));
       }
 
-      // Fetch subscriptions
-      const { data: subsData } = await supabase
-        .from("subscriptions")
-        .select("*");
-      
-      if (subsData) {
-        setSubscriptions(subsData);
-        const activeCount = subsData.filter(s => s.is_active).length;
+      if (subsRes.data) {
+        setSubscriptions(subsRes.data);
+        const activeCount = subsRes.data.filter(s => s.is_active).length;
         setStats(prev => ({ ...prev, activeSubscriptions: activeCount }));
       }
 
-      // Fetch vehicles
-      const { data: vehiclesData } = await supabase
-        .from("vehicles")
-        .select("*")
-        .order("created_at", { ascending: false });
-      
-      if (vehiclesData) {
-        setVehicles(vehiclesData);
-        const verifiedCount = vehiclesData.filter(v => v.is_verified).length;
-        setStats(prev => ({ 
-          ...prev, 
-          totalVehicles: vehiclesData.length,
-          verifiedVehicles: verifiedCount
-        }));
+      if (vehiclesRes.data) {
+        setVehicles(vehiclesRes.data);
+        const verifiedCount = vehiclesRes.data.filter(v => v.is_verified).length;
+        setStats(prev => ({ ...prev, totalVehicles: vehiclesRes.data.length, verifiedVehicles: verifiedCount }));
       }
 
-      // Fetch payment plans
-      const { data: plansData } = await supabase
-        .from("payment_plans")
-        .select("*")
-        .order("created_at", { ascending: false });
-      
-      if (plansData) {
-        setPaymentPlans(plansData);
-      }
-
-      // Fetch payment installments
-      const { data: installmentsData } = await supabase
-        .from("payment_installments")
-        .select("*")
-        .order("due_date", { ascending: true });
-      
-      if (installmentsData) {
-        setPaymentInstallments(installmentsData);
-      }
-
-      // Fetch bank accounts
-      const { data: bankData } = await supabase
-        .from("bank_accounts")
-        .select("*")
-        .order("created_at", { ascending: false });
-      
-      if (bankData) {
-        setBankAccounts(bankData);
-      }
-
-      // Fetch referrals
-      const { data: referralsData } = await supabase
-        .from("referrals")
-        .select("*")
-        .order("created_at", { ascending: false });
-      
-      if (referralsData) {
-        setReferrals(referralsData);
-      }
+      if (plansRes.data) setPaymentPlans(plansRes.data);
+      if (installmentsRes.data) setPaymentInstallments(installmentsRes.data);
+      if (bankRes.data) setBankAccounts(bankRes.data);
+      if (referralsRes.data) setReferrals(referralsRes.data);
     } finally {
       setLoading(false);
     }
@@ -315,7 +257,6 @@ const Admin = () => {
       setBills(prev => prev.map(b => 
         b.id === billId ? { ...b, status: newStatus } : b
       ));
-      // Update stats
       const updatedBills = bills.map(b => b.id === billId ? { ...b, status: newStatus } : b);
       setStats(prev => ({
         ...prev,
@@ -323,31 +264,6 @@ const Admin = () => {
         paidBills: updatedBills.filter(b => b.status === 'paid').length
       }));
     }
-  };
-
-  // Export functions
-  const exportToCSV = (data: any[], filename: string) => {
-    if (data.length === 0) {
-      toast.error("No data to export");
-      return;
-    }
-    
-    const headers = Object.keys(data[0]).join(',');
-    const rows = data.map(item => 
-      Object.values(item).map(val => 
-        typeof val === 'string' ? `"${val}"` : val
-      ).join(',')
-    ).join('\n');
-    
-    const csv = `${headers}\n${rows}`;
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${filename}-${format(new Date(), 'yyyy-MM-dd')}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success(`Exported ${data.length} records`);
   };
 
   // Filter functions
@@ -369,695 +285,515 @@ const Admin = () => {
     vehicle.model?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Pagination helper
-  const paginate = <T,>(items: T[], page: number) => {
-    const start = (page - 1) * ITEMS_PER_PAGE;
-    return items.slice(start, start + ITEMS_PER_PAGE);
-  };
-
-  const totalPages = (items: any[]) => Math.ceil(items.length / ITEMS_PER_PAGE);
-
-  const PaginationControls = ({ tab, items }: { tab: string; items: any[] }) => {
-    const total = totalPages(items);
-    if (total <= 1) return null;
-    
-    return (
-      <div className="flex items-center justify-between mt-4 pt-4 border-t border-border">
-        <span className="text-sm text-muted-foreground">
-          Page {currentPage[tab]} of {total} ({items.length} total)
-        </span>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setCurrentPage(prev => ({ ...prev, [tab]: prev[tab] - 1 }))}
-            disabled={currentPage[tab] === 1}
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setCurrentPage(prev => ({ ...prev, [tab]: prev[tab] + 1 }))}
-            disabled={currentPage[tab] >= total}
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
-    );
+  const handlePageChange = (tab: string, page: number) => {
+    setCurrentPage(prev => ({ ...prev, [tab]: page }));
   };
 
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin rounded-full h-10 w-10 border-2 border-primary border-t-transparent"></div>
+          <p className="text-muted-foreground text-sm">Loading admin data...</p>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="border-b border-border">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")}>
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-              <div className="flex items-center gap-2">
-                <Shield className="h-6 w-6 text-primary" />
-                <h1 className="text-2xl font-bold">Admin Panel</h1>
-              </div>
-            </div>
-            <Badge variant="outline" className="text-primary border-primary">
-              Administrator
-            </Badge>
-          </div>
-        </div>
-      </div>
+      <AdminHeader />
 
-      <div className="container mx-auto px-4 py-8">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 mb-8">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-xs font-medium text-muted-foreground">Users</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.totalUsers}</div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-xs font-medium text-muted-foreground">Active Subs</CardTitle>
-              <Activity className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.activeSubscriptions}</div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-xs font-medium text-muted-foreground">Total Bills</CardTitle>
-              <FileText className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.totalBills}</div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-xs font-medium text-muted-foreground">Pending</CardTitle>
-              <XCircle className="h-4 w-4 text-yellow-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-yellow-500">{stats.pendingBills}</div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-xs font-medium text-muted-foreground">Paid</CardTitle>
-              <CheckCircle className="h-4 w-4 text-primary" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-primary">{stats.paidBills}</div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-xs font-medium text-muted-foreground">Bill Value</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">${stats.totalRevenue.toLocaleString()}</div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-xs font-medium text-muted-foreground">Vehicles</CardTitle>
-              <Car className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.totalVehicles}</div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-xs font-medium text-muted-foreground">Verified</CardTitle>
-              <Shield className="h-4 w-4 text-primary" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-primary">{stats.verifiedVehicles}</div>
-            </CardContent>
-          </Card>
-        </div>
+      <div className="container mx-auto px-4 py-8 space-y-8">
+        {/* Stats */}
+        <AdminStats stats={stats} />
 
         {/* Search */}
-        <div className="relative mb-6">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <div className="relative">
+          <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search users, bills, vehicles..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
+            className="pl-11 h-12 bg-card/50 border-border/50 focus:border-primary/50"
           />
         </div>
 
         {/* Tabs */}
-        <Tabs defaultValue="users" className="space-y-4">
-          <TabsList className="flex-wrap h-auto gap-1">
-            <TabsTrigger value="users">Users</TabsTrigger>
-            <TabsTrigger value="bills">Bills</TabsTrigger>
-            <TabsTrigger value="vehicles">Vehicles</TabsTrigger>
-            <TabsTrigger value="subscriptions">Subscriptions</TabsTrigger>
-            <TabsTrigger value="paymentPlans">Payment Plans</TabsTrigger>
-            <TabsTrigger value="bankAccounts">Bank Accounts</TabsTrigger>
-            <TabsTrigger value="referrals">Referrals</TabsTrigger>
+        <Tabs defaultValue="users" className="space-y-6">
+          <TabsList className="flex flex-wrap h-auto gap-1 bg-muted/50 p-1">
+            <TabsTrigger value="users" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <Users className="h-4 w-4 mr-2" />
+              Users
+            </TabsTrigger>
+            <TabsTrigger value="bills" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <FileText className="h-4 w-4 mr-2" />
+              Bills
+            </TabsTrigger>
+            <TabsTrigger value="vehicles" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <Car className="h-4 w-4 mr-2" />
+              Vehicles
+            </TabsTrigger>
+            <TabsTrigger value="subscriptions" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <CreditCard className="h-4 w-4 mr-2" />
+              Subscriptions
+            </TabsTrigger>
+            <TabsTrigger value="paymentPlans" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <Calendar className="h-4 w-4 mr-2" />
+              Payment Plans
+            </TabsTrigger>
+            <TabsTrigger value="bankAccounts" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <Landmark className="h-4 w-4 mr-2" />
+              Bank Accounts
+            </TabsTrigger>
+            <TabsTrigger value="referrals" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <Gift className="h-4 w-4 mr-2" />
+              Referrals
+            </TabsTrigger>
           </TabsList>
 
           {/* Users Tab */}
           <TabsContent value="users">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle>User Management</CardTitle>
-                  <CardDescription>View and manage all registered users</CardDescription>
-                </div>
-                <Button variant="outline" size="sm" onClick={() => exportToCSV(profiles, 'users')}>
-                  <Download className="h-4 w-4 mr-2" />
-                  Export
-                </Button>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Verified</TableHead>
-                      <TableHead>Joined</TableHead>
-                      <TableHead>Actions</TableHead>
+            <AdminTableWrapper
+              title="User Management"
+              description="View and manage all registered users"
+              icon={<Users className="h-5 w-5" />}
+              data={profiles}
+              exportFilename="users"
+              currentPage={currentPage.users}
+              onPageChange={(page) => handlePageChange('users', page)}
+            >
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-border/50 hover:bg-transparent">
+                    <TableHead className="text-muted-foreground">Name</TableHead>
+                    <TableHead className="text-muted-foreground">Email</TableHead>
+                    <TableHead className="text-muted-foreground">Status</TableHead>
+                    <TableHead className="text-muted-foreground">Joined</TableHead>
+                    <TableHead className="text-muted-foreground">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paginate(filteredProfiles, currentPage.users, ITEMS_PER_PAGE).map((profile) => (
+                    <TableRow key={profile.id} className="border-border/50 hover:bg-muted/30">
+                      <TableCell className="font-medium">
+                        {profile.first_name || profile.last_name 
+                          ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim()
+                          : <span className="text-muted-foreground">N/A</span>}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">{profile.email || 'N/A'}</TableCell>
+                      <TableCell>
+                        <Badge 
+                          variant={profile.documents_verified ? "default" : "secondary"}
+                          className={profile.documents_verified ? "bg-primary/20 text-primary" : ""}
+                        >
+                          {profile.documents_verified ? "Verified" : "Pending"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {format(new Date(profile.created_at), "MMM d, yyyy")}
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => verifyUser(profile.user_id, profile.documents_verified || false)}
+                          className="border-border/50 hover:bg-primary/10 hover:text-primary hover:border-primary/50"
+                        >
+                          {profile.documents_verified ? "Unverify" : "Verify"}
+                        </Button>
+                      </TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {paginate(filteredProfiles, currentPage.users).map((profile) => (
-                      <TableRow key={profile.id}>
-                        <TableCell className="font-medium">
-                          {profile.first_name || profile.last_name 
-                            ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim()
-                            : 'N/A'}
-                        </TableCell>
-                        <TableCell>{profile.email || 'N/A'}</TableCell>
-                        <TableCell>
-                          <Badge variant={profile.documents_verified ? "default" : "secondary"}>
-                            {profile.documents_verified ? "Verified" : "Pending"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          {format(new Date(profile.created_at), "MMM d, yyyy")}
-                        </TableCell>
-                        <TableCell>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => verifyUser(profile.user_id, profile.documents_verified || false)}
-                          >
-                            {profile.documents_verified ? "Unverify" : "Verify"}
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                    {filteredProfiles.length === 0 && (
-                      <TableRow>
-                        <TableCell colSpan={5} className="text-center text-muted-foreground">
-                          No users found
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-                <PaginationControls tab="users" items={filteredProfiles} />
-              </CardContent>
-            </Card>
+                  ))}
+                  {filteredProfiles.length === 0 && <EmptyState colSpan={5} message="No users found" />}
+                </TableBody>
+              </Table>
+            </AdminTableWrapper>
           </TabsContent>
 
           {/* Bills Tab */}
           <TabsContent value="bills">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle>Bill Management</CardTitle>
-                  <CardDescription>View all bills in the system</CardDescription>
-                </div>
-                <Button variant="outline" size="sm" onClick={() => exportToCSV(bills, 'bills')}>
-                  <Download className="h-4 w-4 mr-2" />
-                  Export
-                </Button>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Bill Name</TableHead>
-                      <TableHead>Category</TableHead>
-                      <TableHead>Amount</TableHead>
-                      <TableHead>Due Date</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Actions</TableHead>
+            <AdminTableWrapper
+              title="Bill Management"
+              description="View and manage all bills in the system"
+              icon={<FileText className="h-5 w-5" />}
+              data={bills}
+              exportFilename="bills"
+              currentPage={currentPage.bills}
+              onPageChange={(page) => handlePageChange('bills', page)}
+            >
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-border/50 hover:bg-transparent">
+                    <TableHead className="text-muted-foreground">Bill Name</TableHead>
+                    <TableHead className="text-muted-foreground">Category</TableHead>
+                    <TableHead className="text-muted-foreground">Amount</TableHead>
+                    <TableHead className="text-muted-foreground">Due Date</TableHead>
+                    <TableHead className="text-muted-foreground">Status</TableHead>
+                    <TableHead className="text-muted-foreground">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paginate(filteredBills, currentPage.bills, ITEMS_PER_PAGE).map((bill) => (
+                    <TableRow key={bill.id} className="border-border/50 hover:bg-muted/30">
+                      <TableCell className="font-medium">{bill.name}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="border-border/50">{bill.category}</Badge>
+                      </TableCell>
+                      <TableCell className="font-mono">${Number(bill.amount).toLocaleString()}</TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {format(new Date(bill.due_date), "MMM d, yyyy")}
+                      </TableCell>
+                      <TableCell>
+                        <Badge 
+                          variant={bill.status === "paid" ? "default" : bill.status === "pending" ? "secondary" : "destructive"}
+                          className={bill.status === "paid" ? "bg-primary/20 text-primary" : ""}
+                        >
+                          {bill.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
+                          {bill.status !== 'paid' && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => updateBillStatus(bill.id, 'paid')}
+                              className="border-primary/50 text-primary hover:bg-primary/10"
+                            >
+                              Mark Paid
+                            </Button>
+                          )}
+                          {bill.status === 'paid' && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => updateBillStatus(bill.id, 'pending')}
+                              className="border-border/50 hover:bg-muted/50"
+                            >
+                              Mark Pending
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {paginate(filteredBills, currentPage.bills).map((bill) => (
-                      <TableRow key={bill.id}>
-                        <TableCell className="font-medium">{bill.name}</TableCell>
-                        <TableCell>{bill.category}</TableCell>
-                        <TableCell>${Number(bill.amount).toLocaleString()}</TableCell>
-                        <TableCell>{format(new Date(bill.due_date), "MMM d, yyyy")}</TableCell>
-                        <TableCell>
-                          <Badge 
-                            variant={
-                              bill.status === "paid" ? "default" : 
-                              bill.status === "pending" ? "secondary" : "destructive"
-                            }
-                          >
-                            {bill.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-2">
-                            {bill.status !== 'paid' && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => updateBillStatus(bill.id, 'paid')}
-                              >
-                                Mark Paid
-                              </Button>
-                            )}
-                            {bill.status === 'paid' && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => updateBillStatus(bill.id, 'pending')}
-                              >
-                                Mark Pending
-                              </Button>
-                            )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                    {filteredBills.length === 0 && (
-                      <TableRow>
-                        <TableCell colSpan={6} className="text-center text-muted-foreground">
-                          No bills found
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-                <PaginationControls tab="bills" items={filteredBills} />
-              </CardContent>
-            </Card>
+                  ))}
+                  {filteredBills.length === 0 && <EmptyState colSpan={6} message="No bills found" />}
+                </TableBody>
+              </Table>
+            </AdminTableWrapper>
           </TabsContent>
 
           {/* Vehicles Tab */}
           <TabsContent value="vehicles">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle>Vehicle & VIN Management</CardTitle>
-                  <CardDescription>View and manage all registered vehicles</CardDescription>
-                </div>
-                <Button variant="outline" size="sm" onClick={() => exportToCSV(vehicles, 'vehicles')}>
-                  <Download className="h-4 w-4 mr-2" />
-                  Export
-                </Button>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>VIN</TableHead>
-                      <TableHead>License Plate</TableHead>
-                      <TableHead>Vehicle</TableHead>
-                      <TableHead>Insurance</TableHead>
-                      <TableHead>Verified</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {paginate(filteredVehicles, currentPage.vehicles).map((vehicle) => (
-                      <TableRow key={vehicle.id}>
-                        <TableCell className="font-mono text-xs">
-                          {vehicle.vin || 'N/A'}
-                        </TableCell>
-                        <TableCell>{vehicle.license_plate || 'N/A'}</TableCell>
-                        <TableCell>
-                          {vehicle.year && vehicle.make && vehicle.model 
-                            ? `${vehicle.year} ${vehicle.make} ${vehicle.model}`
-                            : 'N/A'}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex flex-col gap-1">
-                            <span className="text-xs text-muted-foreground">
-                              {vehicle.insurance_provider || 'N/A'}
-                            </span>
-                            <Badge variant={vehicle.insurance_verified ? "default" : "secondary"} className="w-fit">
-                              {vehicle.insurance_verified ? "Verified" : "Pending"}
-                            </Badge>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={vehicle.is_verified ? "default" : "secondary"}>
-                            {vehicle.is_verified ? "Verified" : "Pending"}
+            <AdminTableWrapper
+              title="Vehicle & VIN Management"
+              description="View and manage all registered vehicles"
+              icon={<Car className="h-5 w-5" />}
+              data={vehicles}
+              exportFilename="vehicles"
+              currentPage={currentPage.vehicles}
+              onPageChange={(page) => handlePageChange('vehicles', page)}
+            >
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-border/50 hover:bg-transparent">
+                    <TableHead className="text-muted-foreground">VIN</TableHead>
+                    <TableHead className="text-muted-foreground">License Plate</TableHead>
+                    <TableHead className="text-muted-foreground">Vehicle</TableHead>
+                    <TableHead className="text-muted-foreground">Insurance</TableHead>
+                    <TableHead className="text-muted-foreground">Verified</TableHead>
+                    <TableHead className="text-muted-foreground">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paginate(filteredVehicles, currentPage.vehicles, ITEMS_PER_PAGE).map((vehicle) => (
+                    <TableRow key={vehicle.id} className="border-border/50 hover:bg-muted/30">
+                      <TableCell className="font-mono text-xs">
+                        {vehicle.vin || <span className="text-muted-foreground">N/A</span>}
+                      </TableCell>
+                      <TableCell>{vehicle.license_plate || <span className="text-muted-foreground">N/A</span>}</TableCell>
+                      <TableCell>
+                        {vehicle.year && vehicle.make && vehicle.model 
+                          ? `${vehicle.year} ${vehicle.make} ${vehicle.model}`
+                          : <span className="text-muted-foreground">N/A</span>}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col gap-1">
+                          <span className="text-xs text-muted-foreground">
+                            {vehicle.insurance_provider || 'N/A'}
+                          </span>
+                          <Badge 
+                            variant={vehicle.insurance_verified ? "default" : "secondary"} 
+                            className={`w-fit ${vehicle.insurance_verified ? "bg-primary/20 text-primary" : ""}`}
+                          >
+                            {vehicle.insurance_verified ? "Verified" : "Pending"}
                           </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-2 flex-wrap">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => verifyVehicle(vehicle.id, vehicle.is_verified)}
-                            >
-                              {vehicle.is_verified ? "Unverify" : "Verify"}
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => verifyInsurance(vehicle.id, vehicle.insurance_verified)}
-                            >
-                              {vehicle.insurance_verified ? "Unverify Ins." : "Verify Ins."}
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                    {filteredVehicles.length === 0 && (
-                      <TableRow>
-                        <TableCell colSpan={6} className="text-center text-muted-foreground">
-                          No vehicles found
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-                <PaginationControls tab="vehicles" items={filteredVehicles} />
-              </CardContent>
-            </Card>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge 
+                          variant={vehicle.is_verified ? "default" : "secondary"}
+                          className={vehicle.is_verified ? "bg-primary/20 text-primary" : ""}
+                        >
+                          {vehicle.is_verified ? "Verified" : "Pending"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-2 flex-wrap">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => verifyVehicle(vehicle.id, vehicle.is_verified)}
+                            className="border-border/50 hover:bg-primary/10 hover:text-primary hover:border-primary/50"
+                          >
+                            {vehicle.is_verified ? "Unverify" : "Verify"}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => verifyInsurance(vehicle.id, vehicle.insurance_verified)}
+                            className="border-border/50 hover:bg-primary/10 hover:text-primary hover:border-primary/50"
+                          >
+                            {vehicle.insurance_verified ? "Unverify Ins." : "Verify Ins."}
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {filteredVehicles.length === 0 && <EmptyState colSpan={6} message="No vehicles found" />}
+                </TableBody>
+              </Table>
+            </AdminTableWrapper>
           </TabsContent>
 
           {/* Subscriptions Tab */}
           <TabsContent value="subscriptions">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle>Subscriptions</CardTitle>
-                  <CardDescription>View all subscription plans</CardDescription>
-                </div>
-                <Button variant="outline" size="sm" onClick={() => exportToCSV(subscriptions, 'subscriptions')}>
-                  <Download className="h-4 w-4 mr-2" />
-                  Export
-                </Button>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>User ID</TableHead>
-                      <TableHead>Tier</TableHead>
-                      <TableHead>Access Used</TableHead>
-                      <TableHead>Access Limit</TableHead>
-                      <TableHead>Status</TableHead>
+            <AdminTableWrapper
+              title="Subscriptions"
+              description="View all subscription plans"
+              icon={<CreditCard className="h-5 w-5" />}
+              data={subscriptions}
+              exportFilename="subscriptions"
+              currentPage={currentPage.subscriptions}
+              onPageChange={(page) => handlePageChange('subscriptions', page)}
+            >
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-border/50 hover:bg-transparent">
+                    <TableHead className="text-muted-foreground">User ID</TableHead>
+                    <TableHead className="text-muted-foreground">Tier</TableHead>
+                    <TableHead className="text-muted-foreground">Access Used</TableHead>
+                    <TableHead className="text-muted-foreground">Access Limit</TableHead>
+                    <TableHead className="text-muted-foreground">Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paginate(subscriptions, currentPage.subscriptions, ITEMS_PER_PAGE).map((sub) => (
+                    <TableRow key={sub.id} className="border-border/50 hover:bg-muted/30">
+                      <TableCell className="font-mono text-xs text-muted-foreground">
+                        {sub.user_id.slice(0, 8)}...
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="capitalize border-primary/50 text-primary">
+                          {sub.tier}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="font-mono">${sub.access_used}</TableCell>
+                      <TableCell className="font-mono">${sub.access_limit}</TableCell>
+                      <TableCell>
+                        <Badge 
+                          variant={sub.is_active ? "default" : "secondary"}
+                          className={sub.is_active ? "bg-primary/20 text-primary" : ""}
+                        >
+                          {sub.is_active ? "Active" : "Inactive"}
+                        </Badge>
+                      </TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {paginate(subscriptions, currentPage.subscriptions).map((sub) => (
-                      <TableRow key={sub.id}>
-                        <TableCell className="font-mono text-xs">{sub.user_id.slice(0, 8)}...</TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="capitalize">{sub.tier}</Badge>
-                        </TableCell>
-                        <TableCell>${sub.access_used}</TableCell>
-                        <TableCell>${sub.access_limit}</TableCell>
-                        <TableCell>
-                          <Badge variant={sub.is_active ? "default" : "secondary"}>
-                            {sub.is_active ? "Active" : "Inactive"}
-                          </Badge>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                    {subscriptions.length === 0 && (
-                      <TableRow>
-                        <TableCell colSpan={5} className="text-center text-muted-foreground">
-                          No subscriptions found
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-                <PaginationControls tab="subscriptions" items={subscriptions} />
-              </CardContent>
-            </Card>
+                  ))}
+                  {subscriptions.length === 0 && <EmptyState colSpan={5} message="No subscriptions found" />}
+                </TableBody>
+              </Table>
+            </AdminTableWrapper>
           </TabsContent>
 
           {/* Payment Plans Tab */}
           <TabsContent value="paymentPlans">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle className="flex items-center gap-2">
-                    <Calendar className="h-5 w-5" />
-                    Payment Plans
-                  </CardTitle>
-                  <CardDescription>View all payment plans and installments</CardDescription>
-                </div>
-                <Button variant="outline" size="sm" onClick={() => exportToCSV(paymentPlans, 'payment-plans')}>
-                  <Download className="h-4 w-4 mr-2" />
-                  Export
-                </Button>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>User ID</TableHead>
-                      <TableHead>Total Amount</TableHead>
-                      <TableHead>Installment</TableHead>
-                      <TableHead>Progress</TableHead>
-                      <TableHead>Amount Paid</TableHead>
-                      <TableHead>Next Payment</TableHead>
-                      <TableHead>Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {paginate(paymentPlans, currentPage.paymentPlans).map((plan) => (
-                      <TableRow key={plan.id}>
-                        <TableCell className="font-mono text-xs">{plan.user_id.slice(0, 8)}...</TableCell>
-                        <TableCell>${Number(plan.total_amount).toLocaleString()}</TableCell>
-                        <TableCell>${Number(plan.installment_amount).toLocaleString()}</TableCell>
-                        <TableCell>
-                          <span className="text-sm">
-                            {plan.installments_paid} / {plan.installments_total}
+            <AdminTableWrapper
+              title="Payment Plans"
+              description="View all payment plans and installments"
+              icon={<Calendar className="h-5 w-5" />}
+              data={paymentPlans}
+              exportFilename="payment-plans"
+              currentPage={currentPage.paymentPlans}
+              onPageChange={(page) => handlePageChange('paymentPlans', page)}
+            >
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-border/50 hover:bg-transparent">
+                    <TableHead className="text-muted-foreground">User ID</TableHead>
+                    <TableHead className="text-muted-foreground">Total Amount</TableHead>
+                    <TableHead className="text-muted-foreground">Progress</TableHead>
+                    <TableHead className="text-muted-foreground">Next Payment</TableHead>
+                    <TableHead className="text-muted-foreground">Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paginate(paymentPlans, currentPage.paymentPlans, ITEMS_PER_PAGE).map((plan) => (
+                    <TableRow key={plan.id} className="border-border/50 hover:bg-muted/30">
+                      <TableCell className="font-mono text-xs text-muted-foreground">
+                        {plan.user_id.slice(0, 8)}...
+                      </TableCell>
+                      <TableCell className="font-mono">${plan.total_amount.toLocaleString()}</TableCell>
+                      <TableCell>
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center gap-2">
+                            <div className="h-2 w-24 bg-muted rounded-full overflow-hidden">
+                              <div 
+                                className="h-full bg-primary rounded-full transition-all"
+                                style={{ width: `${(plan.installments_paid / plan.installments_total) * 100}%` }}
+                              />
+                            </div>
+                            <span className="text-xs text-muted-foreground">
+                              {plan.installments_paid}/{plan.installments_total}
+                            </span>
+                          </div>
+                          <span className="text-xs text-muted-foreground">
+                            ${plan.amount_paid} paid
                           </span>
-                        </TableCell>
-                        <TableCell>${Number(plan.amount_paid).toLocaleString()}</TableCell>
-                        <TableCell>
-                          {plan.next_payment_date 
-                            ? format(new Date(plan.next_payment_date), "MMM d, yyyy")
-                            : 'N/A'}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={plan.status === 'active' ? "default" : "secondary"}>
-                            {plan.status}
-                          </Badge>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                    {paymentPlans.length === 0 && (
-                      <TableRow>
-                        <TableCell colSpan={7} className="text-center text-muted-foreground">
-                          No payment plans found
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-                <PaginationControls tab="paymentPlans" items={paymentPlans} />
-
-                {/* Installments Sub-section */}
-                {paymentInstallments.length > 0 && (
-                  <div className="mt-8">
-                    <h3 className="text-lg font-semibold mb-4">Recent Installments</h3>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Plan ID</TableHead>
-                          <TableHead>Amount</TableHead>
-                          <TableHead>Due Date</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Paid At</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {paymentInstallments.slice(0, 10).map((inst) => (
-                          <TableRow key={inst.id}>
-                            <TableCell className="font-mono text-xs">{inst.payment_plan_id.slice(0, 8)}...</TableCell>
-                            <TableCell>${Number(inst.amount).toLocaleString()}</TableCell>
-                            <TableCell>{format(new Date(inst.due_date), "MMM d, yyyy")}</TableCell>
-                            <TableCell>
-                              <Badge variant={inst.status === 'paid' ? "default" : "secondary"}>
-                                {inst.status}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              {inst.paid_at 
-                                ? format(new Date(inst.paid_at), "MMM d, yyyy")
-                                : '-'}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {plan.next_payment_date 
+                          ? format(new Date(plan.next_payment_date), "MMM d, yyyy")
+                          : <span className="text-muted-foreground">N/A</span>}
+                      </TableCell>
+                      <TableCell>
+                        <Badge 
+                          variant={plan.status === 'active' ? "default" : "secondary"}
+                          className={plan.status === 'active' ? "bg-primary/20 text-primary" : ""}
+                        >
+                          {plan.status}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {paymentPlans.length === 0 && <EmptyState colSpan={5} message="No payment plans found" />}
+                </TableBody>
+              </Table>
+            </AdminTableWrapper>
           </TabsContent>
 
           {/* Bank Accounts Tab */}
           <TabsContent value="bankAccounts">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle className="flex items-center gap-2">
-                    <Landmark className="h-5 w-5" />
-                    Bank Accounts
-                  </CardTitle>
-                  <CardDescription>View all linked bank accounts</CardDescription>
-                </div>
-                <Button variant="outline" size="sm" onClick={() => exportToCSV(bankAccounts, 'bank-accounts')}>
-                  <Download className="h-4 w-4 mr-2" />
-                  Export
-                </Button>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>User ID</TableHead>
-                      <TableHead>Bank Name</TableHead>
-                      <TableHead>Account</TableHead>
-                      <TableHead>Connected</TableHead>
-                      <TableHead>Primary</TableHead>
-                      <TableHead>Added</TableHead>
+            <AdminTableWrapper
+              title="Bank Accounts"
+              description="View all linked bank accounts"
+              icon={<Landmark className="h-5 w-5" />}
+              data={bankAccounts}
+              exportFilename="bank-accounts"
+              currentPage={currentPage.bankAccounts}
+              onPageChange={(page) => handlePageChange('bankAccounts', page)}
+            >
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-border/50 hover:bg-transparent">
+                    <TableHead className="text-muted-foreground">User ID</TableHead>
+                    <TableHead className="text-muted-foreground">Bank Name</TableHead>
+                    <TableHead className="text-muted-foreground">Account</TableHead>
+                    <TableHead className="text-muted-foreground">Primary</TableHead>
+                    <TableHead className="text-muted-foreground">Status</TableHead>
+                    <TableHead className="text-muted-foreground">Added</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paginate(bankAccounts, currentPage.bankAccounts, ITEMS_PER_PAGE).map((account) => (
+                    <TableRow key={account.id} className="border-border/50 hover:bg-muted/30">
+                      <TableCell className="font-mono text-xs text-muted-foreground">
+                        {account.user_id.slice(0, 8)}...
+                      </TableCell>
+                      <TableCell className="font-medium">{account.bank_name}</TableCell>
+                      <TableCell className="font-mono">
+                        {account.account_last_four ? `****${account.account_last_four}` : 'N/A'}
+                      </TableCell>
+                      <TableCell>
+                        {account.is_primary && (
+                          <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">Primary</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Badge 
+                          variant={account.is_connected ? "default" : "destructive"}
+                          className={account.is_connected ? "bg-primary/20 text-primary" : ""}
+                        >
+                          {account.is_connected ? "Connected" : "Disconnected"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {format(new Date(account.created_at), "MMM d, yyyy")}
+                      </TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {paginate(bankAccounts, currentPage.bankAccounts).map((account) => (
-                      <TableRow key={account.id}>
-                        <TableCell className="font-mono text-xs">{account.user_id.slice(0, 8)}...</TableCell>
-                        <TableCell>{account.bank_name}</TableCell>
-                        <TableCell>
-                          {account.account_last_four ? `****${account.account_last_four}` : 'N/A'}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={account.is_connected ? "default" : "destructive"}>
-                            {account.is_connected ? "Connected" : "Disconnected"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          {account.is_primary && (
-                            <Badge variant="outline">Primary</Badge>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {format(new Date(account.created_at), "MMM d, yyyy")}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                    {bankAccounts.length === 0 && (
-                      <TableRow>
-                        <TableCell colSpan={6} className="text-center text-muted-foreground">
-                          No bank accounts found
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-                <PaginationControls tab="bankAccounts" items={bankAccounts} />
-              </CardContent>
-            </Card>
+                  ))}
+                  {bankAccounts.length === 0 && <EmptyState colSpan={6} message="No bank accounts found" />}
+                </TableBody>
+              </Table>
+            </AdminTableWrapper>
           </TabsContent>
 
           {/* Referrals Tab */}
           <TabsContent value="referrals">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle className="flex items-center gap-2">
-                    <Gift className="h-5 w-5" />
-                    Referrals
-                  </CardTitle>
-                  <CardDescription>View all referral data</CardDescription>
-                </div>
-                <Button variant="outline" size="sm" onClick={() => exportToCSV(referrals, 'referrals')}>
-                  <Download className="h-4 w-4 mr-2" />
-                  Export
-                </Button>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Referrer ID</TableHead>
-                      <TableHead>Referred ID</TableHead>
-                      <TableHead>Referral Code</TableHead>
-                      <TableHead>Reward</TableHead>
-                      <TableHead>Paid</TableHead>
-                      <TableHead>Date</TableHead>
+            <AdminTableWrapper
+              title="Referrals"
+              description="View all referral activity"
+              icon={<Gift className="h-5 w-5" />}
+              data={referrals}
+              exportFilename="referrals"
+              currentPage={currentPage.referrals}
+              onPageChange={(page) => handlePageChange('referrals', page)}
+            >
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-border/50 hover:bg-transparent">
+                    <TableHead className="text-muted-foreground">Referrer ID</TableHead>
+                    <TableHead className="text-muted-foreground">Referred ID</TableHead>
+                    <TableHead className="text-muted-foreground">Code</TableHead>
+                    <TableHead className="text-muted-foreground">Reward</TableHead>
+                    <TableHead className="text-muted-foreground">Paid</TableHead>
+                    <TableHead className="text-muted-foreground">Date</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paginate(referrals, currentPage.referrals, ITEMS_PER_PAGE).map((referral) => (
+                    <TableRow key={referral.id} className="border-border/50 hover:bg-muted/30">
+                      <TableCell className="font-mono text-xs text-muted-foreground">
+                        {referral.referrer_id.slice(0, 8)}...
+                      </TableCell>
+                      <TableCell className="font-mono text-xs text-muted-foreground">
+                        {referral.referred_id.slice(0, 8)}...
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="font-mono border-border/50">
+                          {referral.referral_code}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="font-mono text-primary">${referral.reward_amount}</TableCell>
+                      <TableCell>
+                        <Badge 
+                          variant={referral.reward_paid ? "default" : "secondary"}
+                          className={referral.reward_paid ? "bg-primary/20 text-primary" : ""}
+                        >
+                          {referral.reward_paid ? "Paid" : "Pending"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {format(new Date(referral.created_at), "MMM d, yyyy")}
+                      </TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {paginate(referrals, currentPage.referrals).map((ref) => (
-                      <TableRow key={ref.id}>
-                        <TableCell className="font-mono text-xs">{ref.referrer_id.slice(0, 8)}...</TableCell>
-                        <TableCell className="font-mono text-xs">{ref.referred_id.slice(0, 8)}...</TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{ref.referral_code}</Badge>
-                        </TableCell>
-                        <TableCell>${Number(ref.reward_amount).toFixed(2)}</TableCell>
-                        <TableCell>
-                          <Badge variant={ref.reward_paid ? "default" : "secondary"}>
-                            {ref.reward_paid ? "Paid" : "Pending"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          {format(new Date(ref.created_at), "MMM d, yyyy")}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                    {referrals.length === 0 && (
-                      <TableRow>
-                        <TableCell colSpan={6} className="text-center text-muted-foreground">
-                          No referrals found
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-                <PaginationControls tab="referrals" items={referrals} />
-              </CardContent>
-            </Card>
+                  ))}
+                  {referrals.length === 0 && <EmptyState colSpan={6} message="No referrals found" />}
+                </TableBody>
+              </Table>
+            </AdminTableWrapper>
           </TabsContent>
         </Tabs>
       </div>
