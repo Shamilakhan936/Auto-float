@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 
   Users, FileText, Search, Car, CreditCard,
-  Landmark, Gift, Calendar
+  Landmark, Gift, Calendar, Eye, Pencil, Trash2, MoreHorizontal
 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -15,6 +15,17 @@ import { AdminStats } from "@/components/admin/AdminStats";
 import { AdminHeader } from "@/components/admin/AdminHeader";
 import { AdminTableWrapper, paginate } from "@/components/admin/AdminTableWrapper";
 import { EmptyState } from "@/components/admin/EmptyState";
+import { UserDetailDialog } from "@/components/admin/UserDetailDialog";
+import { EditUserDialog } from "@/components/admin/EditUserDialog";
+import { EditBillDialog } from "@/components/admin/EditBillDialog";
+import { EditVehicleDialog } from "@/components/admin/EditVehicleDialog";
+import { DeleteConfirmDialog } from "@/components/admin/DeleteConfirmDialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface Profile {
   id: string;
@@ -24,6 +35,11 @@ interface Profile {
   last_name: string | null;
   documents_verified: boolean | null;
   created_at: string;
+  drivers_license_url?: string | null;
+  paystub_url?: string | null;
+  car_insurance_url?: string | null;
+  referral_code?: string | null;
+  referred_by?: string | null;
 }
 
 interface Bill {
@@ -137,6 +153,23 @@ const Admin = () => {
     paidBills: 0
   });
 
+  // Dialog states
+  const [selectedUser, setSelectedUser] = useState<Profile | null>(null);
+  const [userDetailOpen, setUserDetailOpen] = useState(false);
+  const [editUserOpen, setEditUserOpen] = useState(false);
+  
+  const [selectedBill, setSelectedBill] = useState<Bill | null>(null);
+  const [editBillOpen, setEditBillOpen] = useState(false);
+  
+  const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
+  const [editVehicleOpen, setEditVehicleOpen] = useState(false);
+
+  // Delete states
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteType, setDeleteType] = useState<'user' | 'bill' | 'vehicle' | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
   useEffect(() => {
     fetchAdminData();
   }, []);
@@ -188,81 +221,86 @@ const Admin = () => {
     }
   };
 
-  // Edit functions
-  const verifyUser = async (userId: string, currentStatus: boolean) => {
-    const { error } = await supabase
-      .from("profiles")
-      .update({ documents_verified: !currentStatus })
-      .eq("user_id", userId);
-    
-    if (error) {
-      toast.error("Failed to update user verification");
-    } else {
-      toast.success(`User ${!currentStatus ? 'verified' : 'unverified'}`);
-      setProfiles(prev => prev.map(p => 
-        p.user_id === userId ? { ...p, documents_verified: !currentStatus } : p
-      ));
-    }
+  // Update handlers
+  const handleUserUpdate = (updatedUser: Profile) => {
+    setProfiles(prev => prev.map(p => p.user_id === updatedUser.user_id ? updatedUser : p));
   };
 
-  const verifyVehicle = async (vehicleId: string, currentStatus: boolean) => {
-    const { error } = await supabase
-      .from("vehicles")
-      .update({ is_verified: !currentStatus })
-      .eq("id", vehicleId);
-    
-    if (error) {
-      toast.error("Failed to update vehicle verification");
-    } else {
-      toast.success(`Vehicle ${!currentStatus ? 'verified' : 'unverified'}`);
-      setVehicles(prev => prev.map(v => 
-        v.id === vehicleId ? { ...v, is_verified: !currentStatus } : v
-      ));
-      setStats(prev => ({
-        ...prev,
-        verifiedVehicles: prev.verifiedVehicles + (!currentStatus ? 1 : -1)
-      }));
-    }
+  const handleBillUpdate = (updatedBill: Bill) => {
+    setBills(prev => prev.map(b => b.id === updatedBill.id ? updatedBill : b));
+    // Update stats
+    const updatedBills = bills.map(b => b.id === updatedBill.id ? updatedBill : b);
+    setStats(prev => ({
+      ...prev,
+      pendingBills: updatedBills.filter(b => b.status === 'pending').length,
+      paidBills: updatedBills.filter(b => b.status === 'paid').length
+    }));
   };
 
-  const verifyInsurance = async (vehicleId: string, currentStatus: boolean) => {
-    const { error } = await supabase
-      .from("vehicles")
-      .update({ insurance_verified: !currentStatus })
-      .eq("id", vehicleId);
-    
-    if (error) {
-      toast.error("Failed to update insurance verification");
-    } else {
-      toast.success(`Insurance ${!currentStatus ? 'verified' : 'unverified'}`);
-      setVehicles(prev => prev.map(v => 
-        v.id === vehicleId ? { ...v, insurance_verified: !currentStatus } : v
-      ));
-    }
+  const handleVehicleUpdate = (updatedVehicle: Vehicle) => {
+    setVehicles(prev => prev.map(v => v.id === updatedVehicle.id ? updatedVehicle : v));
+    // Update stats
+    const updatedVehicles = vehicles.map(v => v.id === updatedVehicle.id ? updatedVehicle : v);
+    setStats(prev => ({
+      ...prev,
+      verifiedVehicles: updatedVehicles.filter(v => v.is_verified).length
+    }));
   };
 
-  const updateBillStatus = async (billId: string, newStatus: 'pending' | 'paid' | 'failed' | 'scheduled') => {
-    const { error } = await supabase
-      .from("bills")
-      .update({ 
-        status: newStatus,
-        paid_at: newStatus === 'paid' ? new Date().toISOString() : null
-      })
-      .eq("id", billId);
+  // Delete handlers
+  const openDeleteDialog = (type: 'user' | 'bill' | 'vehicle', id: string) => {
+    setDeleteType(type);
+    setDeleteId(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!deleteType || !deleteId) return;
     
+    setDeleting(true);
+    let error;
+
+    if (deleteType === 'user') {
+      const result = await supabase.from("profiles").delete().eq("user_id", deleteId);
+      error = result.error;
+      if (!error) {
+        setProfiles(prev => prev.filter(p => p.user_id !== deleteId));
+        setStats(prev => ({ ...prev, totalUsers: prev.totalUsers - 1 }));
+      }
+    } else if (deleteType === 'bill') {
+      const result = await supabase.from("bills").delete().eq("id", deleteId);
+      error = result.error;
+      if (!error) {
+        const deletedBill = bills.find(b => b.id === deleteId);
+        setBills(prev => prev.filter(b => b.id !== deleteId));
+        setStats(prev => ({
+          ...prev,
+          totalBills: prev.totalBills - 1,
+          pendingBills: deletedBill?.status === 'pending' ? prev.pendingBills - 1 : prev.pendingBills,
+          paidBills: deletedBill?.status === 'paid' ? prev.paidBills - 1 : prev.paidBills
+        }));
+      }
+    } else if (deleteType === 'vehicle') {
+      const result = await supabase.from("vehicles").delete().eq("id", deleteId);
+      error = result.error;
+      if (!error) {
+        const deletedVehicle = vehicles.find(v => v.id === deleteId);
+        setVehicles(prev => prev.filter(v => v.id !== deleteId));
+        setStats(prev => ({
+          ...prev,
+          totalVehicles: prev.totalVehicles - 1,
+          verifiedVehicles: deletedVehicle?.is_verified ? prev.verifiedVehicles - 1 : prev.verifiedVehicles
+        }));
+      }
+    }
+
+    setDeleting(false);
+    setDeleteDialogOpen(false);
+
     if (error) {
-      toast.error("Failed to update bill status");
+      toast.error(`Failed to delete ${deleteType}`);
     } else {
-      toast.success(`Bill marked as ${newStatus}`);
-      setBills(prev => prev.map(b => 
-        b.id === billId ? { ...b, status: newStatus } : b
-      ));
-      const updatedBills = bills.map(b => b.id === billId ? { ...b, status: newStatus } : b);
-      setStats(prev => ({
-        ...prev,
-        pendingBills: updatedBills.filter(b => b.status === 'pending').length,
-        paidBills: updatedBills.filter(b => b.status === 'paid').length
-      }));
+      toast.success(`${deleteType.charAt(0).toUpperCase() + deleteType.slice(1)} deleted successfully`);
     }
   };
 
@@ -287,6 +325,13 @@ const Admin = () => {
 
   const handlePageChange = (tab: string, page: number) => {
     setCurrentPage(prev => ({ ...prev, [tab]: page }));
+  };
+
+  const getDeleteDescription = () => {
+    if (deleteType === 'user') return "This will permanently delete the user profile. This action cannot be undone.";
+    if (deleteType === 'bill') return "This will permanently delete this bill record. This action cannot be undone.";
+    if (deleteType === 'vehicle') return "This will permanently delete this vehicle record. This action cannot be undone.";
+    return "";
   };
 
   if (loading) {
@@ -370,7 +415,7 @@ const Admin = () => {
                     <TableHead className="text-muted-foreground">Email</TableHead>
                     <TableHead className="text-muted-foreground">Status</TableHead>
                     <TableHead className="text-muted-foreground">Joined</TableHead>
-                    <TableHead className="text-muted-foreground">Actions</TableHead>
+                    <TableHead className="text-muted-foreground text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -393,15 +438,31 @@ const Admin = () => {
                       <TableCell className="text-muted-foreground">
                         {format(new Date(profile.created_at), "MMM d, yyyy")}
                       </TableCell>
-                      <TableCell>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => verifyUser(profile.user_id, profile.documents_verified || false)}
-                          className="border-border/50 hover:bg-primary/10 hover:text-primary hover:border-primary/50"
-                        >
-                          {profile.documents_verified ? "Unverify" : "Verify"}
-                        </Button>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-40">
+                            <DropdownMenuItem onClick={() => { setSelectedUser(profile); setUserDetailOpen(true); }}>
+                              <Eye className="h-4 w-4 mr-2" />
+                              View Details
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => { setSelectedUser(profile); setEditUserOpen(true); }}>
+                              <Pencil className="h-4 w-4 mr-2" />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => openDeleteDialog('user', profile.user_id)}
+                              className="text-destructive focus:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -430,7 +491,7 @@ const Admin = () => {
                     <TableHead className="text-muted-foreground">Amount</TableHead>
                     <TableHead className="text-muted-foreground">Due Date</TableHead>
                     <TableHead className="text-muted-foreground">Status</TableHead>
-                    <TableHead className="text-muted-foreground">Actions</TableHead>
+                    <TableHead className="text-muted-foreground text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -452,29 +513,27 @@ const Admin = () => {
                           {bill.status}
                         </Badge>
                       </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          {bill.status !== 'paid' && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => updateBillStatus(bill.id, 'paid')}
-                              className="border-primary/50 text-primary hover:bg-primary/10"
-                            >
-                              Mark Paid
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreHorizontal className="h-4 w-4" />
                             </Button>
-                          )}
-                          {bill.status === 'paid' && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => updateBillStatus(bill.id, 'pending')}
-                              className="border-border/50 hover:bg-muted/50"
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-40">
+                            <DropdownMenuItem onClick={() => { setSelectedBill(bill); setEditBillOpen(true); }}>
+                              <Pencil className="h-4 w-4 mr-2" />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => openDeleteDialog('bill', bill.id)}
+                              className="text-destructive focus:text-destructive"
                             >
-                              Mark Pending
-                            </Button>
-                          )}
-                        </div>
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -503,7 +562,7 @@ const Admin = () => {
                     <TableHead className="text-muted-foreground">Vehicle</TableHead>
                     <TableHead className="text-muted-foreground">Insurance</TableHead>
                     <TableHead className="text-muted-foreground">Verified</TableHead>
-                    <TableHead className="text-muted-foreground">Actions</TableHead>
+                    <TableHead className="text-muted-foreground text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -539,25 +598,27 @@ const Admin = () => {
                           {vehicle.is_verified ? "Verified" : "Pending"}
                         </Badge>
                       </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2 flex-wrap">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => verifyVehicle(vehicle.id, vehicle.is_verified)}
-                            className="border-border/50 hover:bg-primary/10 hover:text-primary hover:border-primary/50"
-                          >
-                            {vehicle.is_verified ? "Unverify" : "Verify"}
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => verifyInsurance(vehicle.id, vehicle.insurance_verified)}
-                            className="border-border/50 hover:bg-primary/10 hover:text-primary hover:border-primary/50"
-                          >
-                            {vehicle.insurance_verified ? "Unverify Ins." : "Verify Ins."}
-                          </Button>
-                        </div>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-40">
+                            <DropdownMenuItem onClick={() => { setSelectedVehicle(vehicle); setEditVehicleOpen(true); }}>
+                              <Pencil className="h-4 w-4 mr-2" />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => openDeleteDialog('vehicle', vehicle.id)}
+                              className="text-destructive focus:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -797,6 +858,39 @@ const Admin = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Dialogs */}
+      <UserDetailDialog 
+        user={selectedUser} 
+        open={userDetailOpen} 
+        onOpenChange={setUserDetailOpen} 
+      />
+      <EditUserDialog 
+        user={selectedUser} 
+        open={editUserOpen} 
+        onOpenChange={setEditUserOpen}
+        onUpdate={handleUserUpdate}
+      />
+      <EditBillDialog 
+        bill={selectedBill} 
+        open={editBillOpen} 
+        onOpenChange={setEditBillOpen}
+        onUpdate={handleBillUpdate}
+      />
+      <EditVehicleDialog 
+        vehicle={selectedVehicle} 
+        open={editVehicleOpen} 
+        onOpenChange={setEditVehicleOpen}
+        onUpdate={handleVehicleUpdate}
+      />
+      <DeleteConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onConfirm={handleDelete}
+        title={`Delete ${deleteType || ''}`}
+        description={getDeleteDescription()}
+        loading={deleting}
+      />
     </div>
   );
 };
