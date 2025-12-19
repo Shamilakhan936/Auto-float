@@ -1,35 +1,47 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Shield, ArrowLeft } from "lucide-react";
+import { Shield, ArrowLeft, Sparkles } from "lucide-react";
 
 export const AdminHeader = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="border-b border-border/50 bg-card/30 backdrop-blur-sm sticky top-0 z-10">
-      <div className="container mx-auto px-4 py-4">
+    <div className="relative overflow-hidden">
+      {/* Gradient background */}
+      <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-info/5" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary/10 via-transparent to-transparent" />
+      
+      <div className="relative container mx-auto px-6 py-6">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-5">
             <Button 
               variant="ghost" 
               size="icon" 
               onClick={() => navigate("/dashboard")}
-              className="hover:bg-muted/50"
+              className="hover:bg-primary/10 hover:text-primary transition-all duration-300"
             >
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-primary/10">
-                <Shield className="h-6 w-6 text-primary" />
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full" />
+                <div className="relative p-3 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/20">
+                  <Shield className="h-7 w-7 text-primary" />
+                </div>
               </div>
               <div>
-                <h1 className="text-xl font-bold">Admin Panel</h1>
-                <p className="text-xs text-muted-foreground">AutoFloat Management</p>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-2xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">
+                    Admin Panel
+                  </h1>
+                  <Sparkles className="h-4 w-4 text-primary animate-pulse" />
+                </div>
+                <p className="text-sm text-muted-foreground">AutoFloat Management Console</p>
               </div>
             </div>
           </div>
-          <Badge className="bg-primary/10 text-primary border-primary/20 hover:bg-primary/20">
+          <Badge className="bg-gradient-to-r from-primary/20 to-primary/10 text-primary border border-primary/30 px-4 py-1.5 text-sm font-medium shadow-glow">
             Administrator
           </Badge>
         </div>

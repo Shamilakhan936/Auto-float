@@ -555,90 +555,97 @@ const Admin = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <AdminHeader />
+      {/* Background decoration */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-info/5 rounded-full blur-3xl" />
+      </div>
 
-      <div className="container mx-auto px-4 py-8 space-y-6">
-        <AdminStats stats={stats} />
+      <div className="relative">
+        <AdminHeader />
 
-        {/* Action Bar */}
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="relative flex-1 min-w-[200px]">
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-11 h-10 bg-card/50 border-border/50"
-            />
+        <div className="container mx-auto px-6 py-8 space-y-8">
+          <AdminStats stats={stats} />
+
+          {/* Action Bar */}
+          <div className="flex flex-wrap items-center gap-3 p-4 rounded-2xl bg-gradient-to-r from-card/80 via-card/50 to-card/80 backdrop-blur-sm border border-border/20 shadow-lg">
+            <div className="relative flex-1 min-w-[200px]">
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-11 h-11 bg-background/50 border-border/30 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
+              />
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowCharts(!showCharts)}
+              className={`gap-2 h-11 px-4 rounded-xl border-border/30 transition-all ${showCharts ? 'bg-primary/10 text-primary border-primary/30' : 'hover:bg-muted/50'}`}
+            >
+              <BarChart3 className="h-4 w-4" />
+              {showCharts ? 'Hide' : 'Show'} Charts
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => fetchAdminData(true)}
+              disabled={refreshing}
+              className="gap-2 h-11 px-4 rounded-xl border-border/30 hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-all"
+            >
+              <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowCharts(!showCharts)}
-            className="gap-2"
-          >
-            <BarChart3 className="h-4 w-4" />
-            {showCharts ? 'Hide' : 'Show'} Charts
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => fetchAdminData(true)}
-            disabled={refreshing}
-            className="gap-2"
-          >
-            <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
-        </div>
 
-        {/* Charts */}
-        {showCharts && (
-          <AdminCharts
-            stats={stats}
-            subscriptionTiers={subscriptionTiers}
-            billCategories={billCategories}
-            monthlyTrend={monthlyTrend}
+          {/* Charts */}
+          {showCharts && (
+            <AdminCharts
+              stats={stats}
+              subscriptionTiers={subscriptionTiers}
+              billCategories={billCategories}
+              monthlyTrend={monthlyTrend}
+            />
+          )}
+
+          {/* Filters */}
+          <AdminFilters
+            statusFilter={statusFilter}
+            onStatusFilterChange={setStatusFilter}
+            statusOptions={getCurrentStatusOptions()}
+            dateFrom={dateFrom}
+            dateTo={dateTo}
+            onDateFromChange={setDateFrom}
+            onDateToChange={setDateTo}
+            onClearFilters={clearFilters}
           />
-        )}
 
-        {/* Filters */}
-        <AdminFilters
-          statusFilter={statusFilter}
-          onStatusFilterChange={setStatusFilter}
-          statusOptions={getCurrentStatusOptions()}
-          dateFrom={dateFrom}
-          dateTo={dateTo}
-          onDateFromChange={setDateFrom}
-          onDateToChange={setDateTo}
-          onClearFilters={clearFilters}
-        />
-
-        {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v); setStatusFilter('all'); }} className="space-y-4">
-          <TabsList className="flex flex-wrap h-auto gap-1 bg-muted/50 p-1">
-            <TabsTrigger value="users" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              <Users className="h-4 w-4 mr-2" />Users
-            </TabsTrigger>
-            <TabsTrigger value="bills" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              <FileText className="h-4 w-4 mr-2" />Bills
-            </TabsTrigger>
-            <TabsTrigger value="vehicles" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              <Car className="h-4 w-4 mr-2" />Vehicles
-            </TabsTrigger>
-            <TabsTrigger value="subscriptions" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              <CreditCard className="h-4 w-4 mr-2" />Subscriptions
-            </TabsTrigger>
-            <TabsTrigger value="paymentPlans" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              <Calendar className="h-4 w-4 mr-2" />Payment Plans
-            </TabsTrigger>
-            <TabsTrigger value="bankAccounts" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              <Landmark className="h-4 w-4 mr-2" />Bank Accounts
-            </TabsTrigger>
-            <TabsTrigger value="referrals" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              <Gift className="h-4 w-4 mr-2" />Referrals
-            </TabsTrigger>
-          </TabsList>
+          {/* Tabs */}
+          <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v); setStatusFilter('all'); }} className="space-y-6">
+            <TabsList className="flex flex-wrap h-auto gap-1.5 bg-card/50 backdrop-blur-sm p-2 rounded-2xl border border-border/20 shadow-lg">
+              <TabsTrigger value="users" className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all">
+                <Users className="h-4 w-4 mr-2" />Users
+              </TabsTrigger>
+              <TabsTrigger value="bills" className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all">
+                <FileText className="h-4 w-4 mr-2" />Bills
+              </TabsTrigger>
+              <TabsTrigger value="vehicles" className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all">
+                <Car className="h-4 w-4 mr-2" />Vehicles
+              </TabsTrigger>
+              <TabsTrigger value="subscriptions" className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all">
+                <CreditCard className="h-4 w-4 mr-2" />Subscriptions
+              </TabsTrigger>
+              <TabsTrigger value="paymentPlans" className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all">
+                <Calendar className="h-4 w-4 mr-2" />Payment Plans
+              </TabsTrigger>
+              <TabsTrigger value="bankAccounts" className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all">
+                <Landmark className="h-4 w-4 mr-2" />Bank Accounts
+              </TabsTrigger>
+              <TabsTrigger value="referrals" className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all">
+                <Gift className="h-4 w-4 mr-2" />Referrals
+              </TabsTrigger>
+            </TabsList>
 
           {/* Users Tab */}
           <TabsContent value="users">
@@ -1128,6 +1135,7 @@ const Admin = () => {
             </AdminTableWrapper>
           </TabsContent>
         </Tabs>
+        </div>
       </div>
 
       {/* Dialogs */}
