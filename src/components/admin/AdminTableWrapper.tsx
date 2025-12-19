@@ -54,23 +54,23 @@ export const AdminTableWrapper = ({
   };
 
   return (
-    <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
-      <CardHeader className="border-b border-border/50">
+    <Card className="border-0 bg-gradient-to-b from-card to-card/80 shadow-xl overflow-hidden">
+      <CardHeader className="border-b border-border/30 bg-gradient-to-r from-muted/30 via-transparent to-muted/30">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-primary/10 text-primary">
+            <div className="p-2.5 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 text-primary shadow-sm">
               {icon}
             </div>
             <div>
-              <CardTitle className="text-lg">{title}</CardTitle>
-              <CardDescription>{description}</CardDescription>
+              <CardTitle className="text-lg font-semibold">{title}</CardTitle>
+              <CardDescription className="text-muted-foreground/80">{description}</CardDescription>
             </div>
           </div>
           <Button 
             variant="outline" 
             size="sm" 
             onClick={exportToCSV}
-            className="border-border/50 hover:bg-muted/50 w-fit"
+            className="border-border/30 bg-background/50 hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-all duration-300 w-fit"
           >
             <Download className="h-4 w-4 mr-2" />
             Export CSV
@@ -84,7 +84,7 @@ export const AdminTableWrapper = ({
         
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-between p-4 border-t border-border/50">
+          <div className="flex items-center justify-between p-4 border-t border-border/20 bg-muted/10">
             <span className="text-sm text-muted-foreground">
               Page {currentPage} of {totalPages} • {data.length} total records
             </span>
@@ -94,7 +94,7 @@ export const AdminTableWrapper = ({
                 size="sm"
                 onClick={() => onPageChange(currentPage - 1)}
                 disabled={currentPage === 1}
-                className="border-border/50"
+                className="border-border/30 bg-background/50 hover:bg-muted/50"
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
@@ -103,7 +103,7 @@ export const AdminTableWrapper = ({
                 size="sm"
                 onClick={() => onPageChange(currentPage + 1)}
                 disabled={currentPage >= totalPages}
-                className="border-border/50"
+                className="border-border/30 bg-background/50 hover:bg-muted/50"
               >
                 <ChevronRight className="h-4 w-4" />
               </Button>
