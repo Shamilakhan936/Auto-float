@@ -25,11 +25,11 @@ export function BulkActions({
 }: BulkActionsProps) {
   if (selectedCount === 0) {
     return (
-      <div className="flex items-center gap-2 px-4 py-2 bg-muted/30 rounded-lg border border-border/50">
+      <div className="flex items-center gap-3 px-5 py-3 bg-gradient-to-r from-muted/40 to-muted/20 rounded-2xl mb-4">
         <Checkbox 
           checked={allSelected} 
           onCheckedChange={onSelectAll}
-          className="data-[state=checked]:bg-primary"
+          className="data-[state=checked]:bg-primary border-muted-foreground/30"
         />
         <span className="text-sm text-muted-foreground">
           Select all ({totalCount} items)
@@ -39,22 +39,22 @@ export function BulkActions({
   }
 
   return (
-    <div className="flex items-center gap-3 px-4 py-2 bg-primary/10 rounded-lg border border-primary/20">
+    <div className="flex items-center gap-3 px-5 py-3 bg-gradient-to-r from-primary/15 to-primary/5 rounded-2xl mb-4 shadow-lg shadow-primary/5">
       <Checkbox 
         checked={allSelected} 
         onCheckedChange={onSelectAll}
         className="data-[state=checked]:bg-primary"
       />
-      <span className="text-sm font-medium text-primary">
+      <span className="text-sm font-semibold text-primary">
         {selectedCount} selected
       </span>
       <div className="flex items-center gap-2 ml-auto">
         {showVerifyActions && onBulkVerify && (
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
             onClick={onBulkVerify}
-            className="h-7 text-xs border-primary/50 text-primary hover:bg-primary/10"
+            className="h-8 text-xs text-primary hover:bg-primary/20 rounded-xl"
           >
             <CheckCircle className="h-3 w-3 mr-1" />
             Verify
@@ -62,10 +62,10 @@ export function BulkActions({
         )}
         {showVerifyActions && onBulkUnverify && (
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
             onClick={onBulkUnverify}
-            className="h-7 text-xs"
+            className="h-8 text-xs hover:bg-muted/50 rounded-xl"
           >
             <XCircle className="h-3 w-3 mr-1" />
             Unverify
@@ -73,10 +73,10 @@ export function BulkActions({
         )}
         {onBulkDelete && (
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
             onClick={onBulkDelete}
-            className="h-7 text-xs border-destructive/50 text-destructive hover:bg-destructive/10"
+            className="h-8 text-xs text-destructive hover:bg-destructive/15 rounded-xl"
           >
             <Trash2 className="h-3 w-3 mr-1" />
             Delete
