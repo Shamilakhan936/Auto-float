@@ -730,19 +730,19 @@ export default function AuthPage() {
 
           {signupStep !== "complete" && (
             <div className="mb-8">
-              <div className="flex items-center justify-center gap-2">
+              <div className="flex items-center justify-center gap-1 sm:gap-2 overflow-x-auto pb-2 -mx-4 px-4">
                 {signupSteps.map((s, index) => (
-                  <div key={s.id} className="flex items-center">
+                  <div key={s.id} className="flex items-center flex-shrink-0">
                     <div
                       className={cn(
-                        "flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold transition-colors",
+                        "flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-full text-xs font-semibold transition-colors",
                         index <= currentStepIndex
                           ? "bg-accent text-accent-foreground"
                           : "bg-secondary text-muted-foreground"
                       )}
                     >
                       {index < currentStepIndex ? (
-                        <CheckCircle2 className="h-4 w-4" />
+                        <CheckCircle2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                       ) : (
                         index + 1
                       )}
@@ -750,7 +750,7 @@ export default function AuthPage() {
                     {index < signupSteps.length - 1 && (
                       <div
                         className={cn(
-                          "h-0.5 w-8 sm:w-12 mx-1 rounded-full transition-colors",
+                          "h-0.5 w-4 sm:w-8 md:w-12 mx-0.5 sm:mx-1 rounded-full transition-colors flex-shrink-0",
                           index < currentStepIndex ? "bg-accent" : "bg-secondary"
                         )}
                       />
@@ -890,11 +890,11 @@ export default function AuthPage() {
                     <Car className="h-4 w-4 text-accent" />
                     <span className="font-medium text-sm text-foreground">Vehicle (Optional)</span>
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <button
                       onClick={() => setVerificationMethod("vin")}
                       className={cn(
-                        "rounded-lg border-2 p-3 text-left transition-all",
+                        "rounded-lg border-2 p-3 text-left transition-all w-full",
                         verificationMethod === "vin"
                           ? "border-accent bg-accent/5"
                           : "border-border hover:border-accent/30"
@@ -906,7 +906,7 @@ export default function AuthPage() {
                     <button
                       onClick={() => setVerificationMethod("plate")}
                       className={cn(
-                        "rounded-lg border-2 p-3 text-left transition-all",
+                        "rounded-lg border-2 p-3 text-left transition-all w-full",
                         verificationMethod === "plate"
                           ? "border-accent bg-accent/5"
                           : "border-border hover:border-accent/30"
@@ -984,7 +984,7 @@ export default function AuthPage() {
                     <span className="font-medium text-sm text-foreground">Documents</span>
                   </div>
                   
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                     <div>
                       <input
                         type="file"

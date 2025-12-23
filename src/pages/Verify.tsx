@@ -135,7 +135,7 @@ export default function VerifyPage() {
       <Header />
       
       <main className="flex-1 py-12 md:py-20">
-        <div className="container px-4 max-w-2xl mx-auto">
+        <div className="container px-4 sm:px-6 max-w-2xl mx-auto">
           {step === "intro" ? (
             <div className="text-center animate-fade-in">
               <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-3xl bg-accent/10 text-accent">
@@ -190,19 +190,19 @@ export default function VerifyPage() {
           ) : (
             <>
               <div className="mb-10">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between overflow-x-auto pb-2 -mx-4 px-4">
                   {steps.map((s, index) => (
-                    <div key={s.id} className="flex items-center">
+                    <div key={s.id} className="flex items-center flex-shrink-0">
                       <div
                         className={cn(
-                          "flex h-10 w-10 items-center justify-center rounded-full text-sm font-regular transition-colors",
+                          "flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full text-xs sm:text-sm font-regular transition-colors",
                           index <= currentStepIndex
                             ? "bg-accent text-accent-foreground"
                             : "bg-secondary text-muted-foreground"
                         )}
                       >
                         {index < currentStepIndex ? (
-                          <CircleCheckBig className="h-5 w-5" />
+                          <CircleCheckBig className="h-4 w-4 sm:h-5 sm:w-5" />
                         ) : (
                           index + 1
                         )}
@@ -210,7 +210,7 @@ export default function VerifyPage() {
                       {index < steps.length - 1 && (
                         <div
                           className={cn(
-                            "h-1 w-20 sm:w-24 mx-2 rounded-full transition-colors",
+                            "h-1 w-8 sm:w-16 md:w-24 mx-1 sm:mx-2 rounded-full transition-colors flex-shrink-0",
                             index < currentStepIndex ? "bg-accent" : "bg-secondary"
                           )}
                         />
@@ -218,10 +218,11 @@ export default function VerifyPage() {
                     </div>
                   ))}
                 </div>
-                <div className="flex justify-between mt-2">
-                  {steps.map((s) => (
-                    <span key={s.id} className="text-xs text-muted-foreground w-10 text-center">
-                      {s.label}
+                <div className="flex justify-between mt-2 overflow-x-auto pb-2 -mx-4 px-4">
+                  {steps.map((s, index) => (
+                    <span key={s.id} className="text-xs text-muted-foreground w-8 sm:w-10 text-center flex-shrink-0">
+                      <span className="hidden sm:inline">{s.label}</span>
+                      <span className="sm:hidden">{s.label.split(' ')[0]}</span>
                     </span>
                   ))}
                 </div>
@@ -237,11 +238,11 @@ export default function VerifyPage() {
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-6">
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <button
                           onClick={() => setVerificationMethod("vin")}
                           className={cn(
-                            "rounded-xl border-2 p-4 text-left transition-all",
+                            "rounded-xl border-2 p-4 text-left transition-all w-full",
                             verificationMethod === "vin"
                               ? "border-accent bg-accent/5"
                               : "border-border hover:border-accent/30"
@@ -253,7 +254,7 @@ export default function VerifyPage() {
                         <button
                           onClick={() => setVerificationMethod("plate")}
                           className={cn(
-                            "rounded-xl border-2 p-4 text-left transition-all",
+                            "rounded-xl border-2 p-4 text-left transition-all w-full",
                             verificationMethod === "plate"
                               ? "border-accent bg-accent/5"
                               : "border-border hover:border-accent/30"

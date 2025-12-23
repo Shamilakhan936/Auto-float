@@ -23,6 +23,14 @@ export function Header() {
     navigate("/");
   };
 
+  const handleMobileMenuToggle = () => {
+    setMobileMenuOpen(!mobileMenuOpen);
+  };
+
+  const handleMobileMenuClose = () => {
+    setMobileMenuOpen(false);
+  };
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between px-4 md:px-6">
@@ -33,7 +41,6 @@ export function Header() {
           <span className="text-xl font-bold text-foreground">AutoFloat</span>
         </Link>
 
-        {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-8">
           {navLinks.map((link) => (
             <Link
@@ -84,10 +91,9 @@ export function Header() {
           )}
         </div>
 
-        {/* Mobile Menu Button */}
         <button
           className="md:hidden p-2"
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          onClick={handleMobileMenuToggle}
           aria-label="Toggle menu"
         >
           {mobileMenuOpen ? (
@@ -98,7 +104,6 @@ export function Header() {
         </button>
       </div>
 
-      {/* Mobile Menu */}
       {mobileMenuOpen && (
         <div className="md:hidden border-t border-border bg-background animate-fade-in">
           <nav className="container flex flex-col gap-4 px-4 py-6">
@@ -112,13 +117,13 @@ export function Header() {
                     ? "text-accent"
                     : "text-muted-foreground"
                 )}
-                onClick={() => setMobileMenuOpen(false)}
+                onClick={handleMobileMenuClose}
               >
                 {link.label}
               </Link>
             ))}
             <div className="flex flex-col gap-3 pt-4 border-t border-border">
-              <Link to="/admin" onClick={() => setMobileMenuOpen(false)}>
+              <Link to="/admin" onClick={handleMobileMenuClose}>
                 <Button variant="outline" className="w-full text-accent">
                   <Shield className="h-4 w-4 mr-2" />
                   Admin Panel
@@ -134,12 +139,12 @@ export function Header() {
                 </>
               ) : (
                 <>
-                  <Link to="/auth" onClick={() => setMobileMenuOpen(false)}>
+                  <Link to="/auth" onClick={handleMobileMenuClose}>
                     <Button variant="outline" className="w-full">
                       Sign In
                     </Button>
                   </Link>
-                  <Link to="/auth" onClick={() => setMobileMenuOpen(false)}>
+                  <Link to="/auth" onClick={handleMobileMenuClose}>
                     <Button variant="accent" className="w-full">
                       Get Started
                     </Button>

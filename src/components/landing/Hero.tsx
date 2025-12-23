@@ -72,7 +72,7 @@ export function Hero() {
                 <div key={index} className="flex items-center justify-center gap-3 text-muted-foreground">
                   <Icon className="h-5 w-5 text-accent" />
                   <span className="text-sm font-medium">{indicator.text}</span>
-                </div>
+            </div>
               );
             })}
           </div>

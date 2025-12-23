@@ -56,7 +56,7 @@ export default function PrivacyPage() {
                     {section.number}. {section.title}
                   </h2>
                   <p>{section.content}</p>
-                </section>
+              </section>
               ))}
             </div>
           </div>

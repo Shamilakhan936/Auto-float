@@ -761,7 +761,7 @@ export default function DashboardPage() {
                 )}
               </CardContent>
             </Card>
-            
+
             <Card className="animate-fade-in [animation-delay:250ms] opacity-0">
               <CardHeader>
                 <div className="flex items-center justify-between">

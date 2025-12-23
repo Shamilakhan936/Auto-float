@@ -66,7 +66,7 @@ export default function TermsPage() {
                     {section.number}. {section.title}
                   </h2>
                   <p>{section.content}</p>
-                </section>
+              </section>
               ))}
             </div>
           </div>

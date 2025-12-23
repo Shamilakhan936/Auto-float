@@ -78,16 +78,16 @@ export default function ContactPage() {
                     const Icon = info.icon;
                     return (
                       <Card key={index}>
-                        <CardContent className="flex items-center gap-4 p-4">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent/10 text-accent">
+                    <CardContent className="flex items-center gap-4 p-4">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent/10 text-accent">
                             <Icon className="h-5 w-5" />
-                          </div>
-                          <div>
+                      </div>
+                      <div>
                             <p className="text-sm text-muted-foreground">{info.label}</p>
                             <p className="font-medium text-foreground">{info.value}</p>
-                          </div>
-                        </CardContent>
-                      </Card>
+                      </div>
+                    </CardContent>
+                  </Card>
                     );
                   })}
                 </div>

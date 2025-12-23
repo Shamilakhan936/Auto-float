@@ -253,19 +253,19 @@ export default function ConnectBankPage() {
               <CardContent className="space-y-6">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {settlementOptions.map((option) => (
-                    <button
+                  <button
                       key={option.id}
                       onClick={() => setSettlementTiming(option.id)}
-                      className={cn(
-                        "rounded-xl border-2 p-6 text-left transition-all",
+                    className={cn(
+                      "rounded-xl border-2 p-6 text-left transition-all",
                         settlementTiming === option.id
-                          ? "border-accent bg-accent/5"
-                          : "border-border hover:border-accent/30"
-                      )}
-                    >
+                        ? "border-accent bg-accent/5"
+                        : "border-border hover:border-accent/30"
+                    )}
+                  >
                       <p className="text-lg font-semibold text-foreground mb-2">{option.title}</p>
                       <p className="text-sm text-muted-foreground">{option.description}</p>
-                    </button>
+                  </button>
                   ))}
                 </div>
                 

@@ -176,20 +176,20 @@ export default function PlansPage() {
                   onClick={() => setSelectedPlan(plan.tier)}
                 >
                   <CardHeader className="text-center pb-2 pt-6">
-                    {currentTier === plan.tier && (
+                  {currentTier === plan.tier && (
                       <div className="mb-4">
-                        <Badge variant="success" className="shadow-md">
-                          Current Plan
-                        </Badge>
-                      </div>
-                    )}
-                    {plan.popular && currentTier !== plan.tier && (
+                      <Badge variant="success" className="shadow-md">
+                        Current Plan
+                      </Badge>
+                    </div>
+                  )}
+                  {plan.popular && currentTier !== plan.tier && (
                       <div className="mb-4">
-                        <Badge variant="accent" className="shadow-md">
-                          Most Popular
-                        </Badge>
-                      </div>
-                    )}
+                      <Badge variant="accent" className="shadow-md">
+                        Most Popular
+                      </Badge>
+                    </div>
+                  )}
                     <div className={cn(
                       "mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl",
                       plan.popular ? "bg-accent text-accent-foreground" : "bg-primary/10 text-primary"
@@ -245,7 +245,7 @@ export default function PlansPage() {
                 {trustBadges.map((badge) => (
                   <Badge key={badge} variant="outline" className="text-sm py-2 px-4">
                     {badge}
-                  </Badge>
+                </Badge>
                 ))}
               </div>
             </div>
