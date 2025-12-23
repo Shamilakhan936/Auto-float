@@ -129,7 +129,6 @@ export default function DashboardPage() {
   const [paymentPlanOpen, setPaymentPlanOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   
-  // New bill form
   const [newBillName, setNewBillName] = useState("");
   const [newBillCategory, setNewBillCategory] = useState("");
   const [newBillAmount, setNewBillAmount] = useState("");
@@ -150,7 +149,6 @@ export default function DashboardPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Fetch subscription
       const { data: subData, error: subError } = await supabase
         .from("subscriptions")
         .select("*")
@@ -162,7 +160,6 @@ export default function DashboardPage() {
         setSubscription(subData as Subscription);
       }
 
-      // Fetch bills
       const { data: billsData, error: billsError } = await supabase
         .from("bills")
         .select("*")
@@ -172,7 +169,6 @@ export default function DashboardPage() {
       if (billsError) throw billsError;
       setBills((billsData as Bill[]) || []);
 
-      // Fetch vehicle
       const { data: vehicleData, error: vehicleError } = await supabase
         .from("vehicles")
         .select("*")
@@ -184,7 +180,6 @@ export default function DashboardPage() {
         setVehicle(vehicleData as Vehicle);
       }
 
-      // Fetch bank account
       const { data: bankData, error: bankError } = await supabase
         .from("bank_accounts")
         .select("*")
@@ -197,7 +192,6 @@ export default function DashboardPage() {
         setBankAccount(bankData as BankAccount);
       }
 
-      // Fetch payment plans
       const { data: plansData, error: plansError } = await supabase
         .from("payment_plans")
         .select("*")
@@ -207,7 +201,6 @@ export default function DashboardPage() {
       if (plansError) throw plansError;
       setPaymentPlans((plansData as PaymentPlan[]) || []);
 
-      // Fetch installments
       const { data: installmentsData, error: installmentsError } = await supabase
         .from("payment_installments")
         .select("*")
@@ -217,7 +210,6 @@ export default function DashboardPage() {
       if (installmentsError) throw installmentsError;
       setInstallments((installmentsData as PaymentInstallment[]) || []);
 
-      // Fetch profile for referral code
       const { data: profileData } = await supabase
         .from("profiles")
         .select("referral_code")
@@ -265,7 +257,6 @@ export default function DashboardPage() {
 
     setSubmitting(true);
     try {
-      // Insert bill
       const { data: billData, error: billError } = await supabase.from("bills").insert({
         user_id: user.id,
         name: newBillName,
@@ -277,7 +268,6 @@ export default function DashboardPage() {
 
       if (billError) throw billError;
 
-      // Create payment plan for this bill (4 weekly installments)
       const installmentAmount = amount / 4;
       const { data: planData, error: planError } = await supabase.from("payment_plans").insert({
         user_id: user.id,
@@ -290,7 +280,6 @@ export default function DashboardPage() {
 
       if (planError) throw planError;
 
-      // Create 4 installments
       const installmentsToCreate = [];
       for (let i = 0; i < 4; i++) {
         installmentsToCreate.push({
@@ -305,7 +294,6 @@ export default function DashboardPage() {
       const { error: installmentsError } = await supabase.from("payment_installments").insert(installmentsToCreate);
       if (installmentsError) throw installmentsError;
 
-      // Update access used
       const { error: subError } = await supabase
         .from("subscriptions")
         .update({ access_used: subscription.access_used + amount })
@@ -374,7 +362,6 @@ export default function DashboardPage() {
     setSubmitting(true);
 
     try {
-      // Update installment to paid
       const { error: installmentError } = await supabase
         .from("payment_installments")
         .update({ 
@@ -385,7 +372,6 @@ export default function DashboardPage() {
 
       if (installmentError) throw installmentError;
 
-      // Update payment plan
       const plan = paymentPlans.find(p => p.id === planId);
       if (plan) {
         const newAmountPaid = plan.amount_paid + amount;
@@ -422,13 +408,30 @@ export default function DashboardPage() {
     }
   };
 
+  const handleCopyReferralCode = () => {
+    const code = referralCode || `REF-${user?.id?.slice(0, 8).toUpperCase()}`;
+    navigator.clipboard.writeText(code);
+    toast({
+      title: "Copied!",
+      description: "Referral code copied to clipboard",
+    });
+  };
+
+  const handlePayNextInstallment = (installment: PaymentInstallment) => {
+    const plan = paymentPlans.find(p => 
+      installments.some(i => i.payment_plan_id === p.id && i.id === installment.id)
+    );
+    if (plan) {
+      handleMakePayment(installment.id, installment.amount, plan.id);
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
       
       <main className="flex-1 py-8 md:py-12">
         <div className="container px-4">
-          {/* Header */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
             <div>
               <h1 className="text-2xl md:text-3xl font-bold text-foreground">Dashboard</h1>
@@ -448,9 +451,7 @@ export default function DashboardPage() {
             </div>
           </div>
           
-          {/* Stats Grid */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            {/* Access Card */}
             <Card className="md:col-span-2 animate-fade-in">
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
@@ -483,7 +484,6 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
             
-            {/* Next Payment Card */}
             <Card className="animate-fade-in [animation-delay:100ms] opacity-0">
               <CardHeader className="pb-2">
                 <CardTitle className="text-lg">Next Payment</CardTitle>
@@ -513,7 +513,6 @@ export default function DashboardPage() {
             </Card>
           </div>
 
-          {/* Payment Plan Card */}
           {(activePaymentPlans.length > 0 || totalOutstanding > 0) && (
             <Card className="mb-8 animate-fade-in [animation-delay:150ms] opacity-0 border-accent/30">
               <CardHeader className="pb-2">
@@ -555,14 +554,7 @@ export default function DashboardPage() {
                       <Button 
                         variant="accent" 
                         size="sm"
-                        onClick={() => {
-                          const plan = paymentPlans.find(p => 
-                            installments.some(i => i.payment_plan_id === p.id && i.id === nextInstallment.id)
-                          );
-                          if (plan) {
-                            handleMakePayment(nextInstallment.id, nextInstallment.amount, plan.id);
-                          }
-                        }}
+                        onClick={() => handlePayNextInstallment(nextInstallment)}
                         disabled={submitting}
                       >
                         {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Pay Now"}
@@ -574,7 +566,6 @@ export default function DashboardPage() {
             </Card>
           )}
 
-          {/* Installment Plan Table */}
           {paymentPlans.length > 0 && (
             <Card className="mb-8 animate-fade-in [animation-delay:175ms] opacity-0">
               <CardHeader>
@@ -670,11 +661,7 @@ export default function DashboardPage() {
                                 <Button 
                                   variant="accent" 
                                   size="sm"
-                                  onClick={() => {
-                                    if (plan) {
-                                      handleMakePayment(installment.id, installment.amount, plan.id);
-                                    }
-                                  }}
+                                  onClick={() => handlePayNextInstallment(installment)}
                                   disabled={submitting || (index > 0 && installments[index - 1]?.status !== 'paid')}
                                 >
                                   {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Pay Now"}
@@ -688,7 +675,6 @@ export default function DashboardPage() {
                   </table>
                 </div>
                 
-                {/* Summary Footer */}
                 <div className="mt-4 pt-4 border-t border-border flex items-center justify-between">
                   <div className="flex items-center gap-6">
                     <div className="flex items-center gap-2">
@@ -715,9 +701,7 @@ export default function DashboardPage() {
             </Card>
           )}
           
-          {/* Bills Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-            {/* Upcoming Bills */}
             <Card className="animate-fade-in [animation-delay:200ms] opacity-0">
               <CardHeader>
                 <div className="flex items-center justify-between">
@@ -777,8 +761,7 @@ export default function DashboardPage() {
                 )}
               </CardContent>
             </Card>
-
-            {/* Paid Bills */}
+            
             <Card className="animate-fade-in [animation-delay:250ms] opacity-0">
               <CardHeader>
                 <div className="flex items-center justify-between">
@@ -835,7 +818,6 @@ export default function DashboardPage() {
             </Card>
           </div>
 
-          {/* Referral Section */}
           <Card className="mb-8 animate-fade-in [animation-delay:280ms] opacity-0 border-accent/30 bg-gradient-to-r from-accent/5 to-transparent">
             <CardContent className="py-6">
               <div className="flex flex-col md:flex-row items-center gap-6">
@@ -859,14 +841,7 @@ export default function DashboardPage() {
                       variant="ghost" 
                       size="sm" 
                       className="h-8 w-8 p-0"
-                      onClick={() => {
-                        const code = referralCode || `REF-${user?.id?.slice(0, 8).toUpperCase()}`;
-                        navigator.clipboard.writeText(code);
-                        toast({
-                          title: "Copied!",
-                          description: "Referral code copied to clipboard",
-                        });
-                      }}
+                      onClick={handleCopyReferralCode}
                     >
                       <Copy className="h-4 w-4" />
                     </Button>
@@ -880,8 +855,6 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
           
-          
-          {/* Quick Actions */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-8">
             <Card 
               className="hover:border-accent/30 transition-colors cursor-pointer animate-fade-in [animation-delay:300ms] opacity-0"
@@ -941,7 +914,6 @@ export default function DashboardPage() {
       
       <Footer />
 
-      {/* Add Bill Dialog */}
       <Dialog open={addBillOpen} onOpenChange={setAddBillOpen}>
         <DialogContent>
           <DialogHeader>
@@ -1027,7 +999,6 @@ export default function DashboardPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Manage Bank Account Dialog */}
       <Dialog open={manageBankOpen} onOpenChange={setManageBankOpen}>
         <DialogContent>
           <DialogHeader>
@@ -1076,7 +1047,6 @@ export default function DashboardPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Manage Vehicle Dialog */}
       <Dialog open={manageVehicleOpen} onOpenChange={setManageVehicleOpen}>
         <DialogContent>
           <DialogHeader>
@@ -1161,7 +1131,6 @@ export default function DashboardPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Payment Plan Dialog */}
       <Dialog open={paymentPlanOpen} onOpenChange={setPaymentPlanOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>

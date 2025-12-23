@@ -61,7 +61,6 @@ export default function BlogPage() {
       <Header />
       
       <main className="flex-1">
-        {/* Hero */}
         <section className="py-16 md:py-24">
           <div className="container px-4">
             <div className="mx-auto max-w-3xl text-center">
@@ -76,7 +75,6 @@ export default function BlogPage() {
           </div>
         </section>
         
-        {/* Blog Posts */}
         <section className="py-8 pb-24">
           <div className="container px-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">

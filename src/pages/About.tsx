@@ -32,7 +32,6 @@ export default function AboutPage() {
       <Header />
       
       <main className="flex-1">
-        {/* Hero */}
         <section className="py-16 md:py-24">
           <div className="container px-4">
             <div className="mx-auto max-w-3xl text-center">
@@ -48,7 +47,6 @@ export default function AboutPage() {
           </div>
         </section>
         
-        {/* Story */}
         <section className="py-16 bg-secondary/30">
           <div className="container px-4">
             <div className="mx-auto max-w-3xl">
@@ -74,7 +72,6 @@ export default function AboutPage() {
           </div>
         </section>
         
-        {/* Values */}
         <section className="py-16 md:py-24">
           <div className="container px-4">
             <div className="mx-auto max-w-2xl text-center mb-12">

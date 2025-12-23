@@ -10,6 +10,29 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Mail, Phone, MapPin, MessageCircle, Clock } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
+const contactInfo = [
+  {
+    icon: Mail,
+    label: "Email",
+    value: "support@autoplus.com",
+  },
+  {
+    icon: Phone,
+    label: "Phone",
+    value: "1-800-AUTO-PLUS",
+  },
+  {
+    icon: MapPin,
+    label: "Address",
+    value: "123 Finance Street, San Francisco, CA 94102",
+  },
+  {
+    icon: Clock,
+    label: "Support Hours",
+    value: "24/7 Available",
+  },
+];
+
 export default function ContactPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -30,7 +53,6 @@ export default function ContactPage() {
       <Header />
       
       <main className="flex-1">
-        {/* Hero */}
         <section className="py-16 md:py-24">
           <div className="container px-4">
             <div className="mx-auto max-w-3xl text-center">
@@ -45,66 +67,32 @@ export default function ContactPage() {
           </div>
         </section>
         
-        {/* Contact Info & Form */}
         <section className="py-8 pb-24">
           <div className="container px-4">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 max-w-5xl mx-auto">
-              {/* Contact Info */}
               <div className="space-y-6">
                 <h2 className="text-xl font-bold text-foreground">Contact Information</h2>
                 
                 <div className="space-y-4">
-                  <Card>
-                    <CardContent className="flex items-center gap-4 p-4">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent/10 text-accent">
-                        <Mail className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Email</p>
-                        <p className="font-medium text-foreground">support@autoplus.com</p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                  
-                  <Card>
-                    <CardContent className="flex items-center gap-4 p-4">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent/10 text-accent">
-                        <Phone className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Phone</p>
-                        <p className="font-medium text-foreground">1-800-AUTO-PLUS</p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                  
-                  <Card>
-                    <CardContent className="flex items-center gap-4 p-4">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent/10 text-accent">
-                        <MapPin className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Address</p>
-                        <p className="font-medium text-foreground">123 Finance Street, San Francisco, CA 94102</p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                  
-                  <Card>
-                    <CardContent className="flex items-center gap-4 p-4">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent/10 text-accent">
-                        <Clock className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Support Hours</p>
-                        <p className="font-medium text-foreground">24/7 Available</p>
-                      </div>
-                    </CardContent>
-                  </Card>
+                  {contactInfo.map((info, index) => {
+                    const Icon = info.icon;
+                    return (
+                      <Card key={index}>
+                        <CardContent className="flex items-center gap-4 p-4">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent/10 text-accent">
+                            <Icon className="h-5 w-5" />
+                          </div>
+                          <div>
+                            <p className="text-sm text-muted-foreground">{info.label}</p>
+                            <p className="font-medium text-foreground">{info.value}</p>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </div>
               </div>
               
-              {/* Contact Form */}
               <Card>
                 <CardContent className="p-6">
                   <h2 className="text-xl font-bold text-foreground mb-6">Send us a message</h2>

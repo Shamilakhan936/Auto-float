@@ -59,7 +59,6 @@ export default function CareersPage() {
       <Header />
       
       <main className="flex-1">
-        {/* Hero */}
         <section className="py-16 md:py-24">
           <div className="container px-4">
             <div className="mx-auto max-w-3xl text-center">
@@ -75,7 +74,6 @@ export default function CareersPage() {
           </div>
         </section>
         
-        {/* Benefits */}
         <section className="py-12 bg-secondary/30">
           <div className="container px-4">
             <div className="flex flex-wrap items-center justify-center gap-4">
@@ -88,7 +86,6 @@ export default function CareersPage() {
           </div>
         </section>
         
-        {/* Open Positions */}
         <section className="py-16 md:py-24">
           <div className="container px-4">
             <div className="mx-auto max-w-3xl">

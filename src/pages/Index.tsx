@@ -5,7 +5,7 @@ import { Features } from "@/components/landing/Features";
 import { HowItWorks } from "@/components/landing/HowItWorks";
 import { CTA } from "@/components/landing/CTA";
 
-const Index = () => {
+export default function Index() {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
@@ -18,6 +18,4 @@ const Index = () => {
       <Footer />
     </div>
   );
-};
-
-export default Index;
+}

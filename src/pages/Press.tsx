@@ -38,7 +38,6 @@ export default function PressPage() {
       <Header />
       
       <main className="flex-1">
-        {/* Hero */}
         <section className="py-16 md:py-24">
           <div className="container px-4">
             <div className="mx-auto max-w-3xl text-center">
@@ -53,7 +52,6 @@ export default function PressPage() {
           </div>
         </section>
         
-        {/* Media Kit */}
         <section className="py-12 bg-secondary/30">
           <div className="container px-4">
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -66,7 +64,6 @@ export default function PressPage() {
           </div>
         </section>
         
-        {/* Press Releases */}
         <section className="py-16 md:py-24">
           <div className="container px-4">
             <div className="mx-auto max-w-3xl">

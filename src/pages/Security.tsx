@@ -37,13 +37,19 @@ const securityFeatures = [
   },
 ];
 
+const complianceBadges = [
+  "SOC 2 Type II",
+  "PCI DSS Level 1",
+  "CCPA Compliant",
+  "GDPR Ready",
+];
+
 export default function SecurityPage() {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
       
       <main className="flex-1">
-        {/* Hero */}
         <section className="py-16 md:py-24">
           <div className="container px-4">
             <div className="mx-auto max-w-3xl text-center">
@@ -58,7 +64,6 @@ export default function SecurityPage() {
           </div>
         </section>
         
-        {/* Security Features */}
         <section className="py-8 pb-24">
           <div className="container px-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
@@ -81,7 +86,6 @@ export default function SecurityPage() {
           </div>
         </section>
         
-        {/* Compliance */}
         <section className="py-16 bg-secondary/30">
           <div className="container px-4">
             <div className="mx-auto max-w-3xl text-center">
@@ -90,16 +94,16 @@ export default function SecurityPage() {
                 We maintain compliance with major security and privacy standards.
               </p>
               <div className="flex flex-wrap items-center justify-center gap-6">
-                <Badge variant="outline" className="py-3 px-6 text-sm">SOC 2 Type II</Badge>
-                <Badge variant="outline" className="py-3 px-6 text-sm">PCI DSS Level 1</Badge>
-                <Badge variant="outline" className="py-3 px-6 text-sm">CCPA Compliant</Badge>
-                <Badge variant="outline" className="py-3 px-6 text-sm">GDPR Ready</Badge>
+                {complianceBadges.map((badge) => (
+                  <Badge key={badge} variant="outline" className="py-3 px-6 text-sm">
+                    {badge}
+                  </Badge>
+                ))}
               </div>
             </div>
           </div>
         </section>
         
-        {/* Report */}
         <section className="py-16">
           <div className="container px-4">
             <div className="mx-auto max-w-xl text-center p-8 rounded-2xl border border-border bg-card">

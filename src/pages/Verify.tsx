@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Car, CheckCircle2, Shield, ArrowRight, AlertCircle, Loader2 } from "lucide-react";
+import { Car, CheckCircle2, Shield, ArrowRight, AlertCircle, Loader2,CircleCheckBig } from "lucide-react";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { cn } from "@/lib/utils";
@@ -56,7 +56,6 @@ export default function VerifyPage() {
 
     setSubmitting(true);
     try {
-      // Insert or update vehicle
       const { error: vehicleError } = await supabase.from("vehicles").upsert({
         user_id: user.id,
         vin: verificationMethod === "vin" ? vin : null,
@@ -72,7 +71,6 @@ export default function VerifyPage() {
 
       if (vehicleError) throw vehicleError;
 
-      // Update subscription to auto_plus with higher limit
       const { error: subError } = await supabase
         .from("subscriptions")
         .update({ 
@@ -108,7 +106,21 @@ export default function VerifyPage() {
     { id: "complete", label: "Complete" },
   ];
 
+  const benefits = [
+    { icon: Shield, text: "No Lien Created" },
+    { icon: ArrowRight, text: "Higher Access" },
+    { icon: CheckCircle2, text: "AutoFloat Badge" },
+  ];
+
   const currentStepIndex = steps.findIndex((s) => s.id === step);
+
+  const handleVerifyNow = () => {
+    if (user) {
+      setStep("vin");
+    } else {
+      navigate("/auth");
+    }
+  };
 
   if (authLoading) {
     return (
@@ -142,27 +154,23 @@ export default function VerifyPage() {
                 Auto verification increases your monthly access limit safely. No lien is created on your vehicle.
               </p>
               
-              {/* Benefits */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
-                <div className="rounded-xl border border-border bg-card p-4 text-center">
-                  <Shield className="h-6 w-6 text-accent mx-auto mb-2" />
-                  <p className="text-sm font-medium text-foreground">No Lien Created</p>
-                </div>
-                <div className="rounded-xl border border-border bg-card p-4 text-center">
-                  <ArrowRight className="h-6 w-6 text-accent mx-auto mb-2" />
-                  <p className="text-sm font-medium text-foreground">Higher Access</p>
-                </div>
-                <div className="rounded-xl border border-border bg-card p-4 text-center">
-                  <CheckCircle2 className="h-6 w-6 text-accent mx-auto mb-2" />
-                  <p className="text-sm font-medium text-foreground">AutoFloat Badge</p>
-                </div>
+                {benefits.map((benefit, index) => {
+                  const Icon = benefit.icon;
+                  return (
+                    <div key={index} className="rounded-xl border border-border bg-card p-4 text-center">
+                      <Icon className="h-6 w-6 text-accent mx-auto mb-2" />
+                      <p className="text-sm font-medium text-foreground">{benefit.text}</p>
+                    </div>
+                  );
+                })}
               </div>
               
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                 <Button 
                   variant="accent" 
                   size="lg" 
-                  onClick={() => user ? setStep("vin") : navigate("/auth")} 
+                  onClick={handleVerifyNow}
                   className="w-full sm:w-auto"
                 >
                   Verify Now
@@ -181,21 +189,20 @@ export default function VerifyPage() {
             </div>
           ) : (
             <>
-              {/* Progress Steps */}
               <div className="mb-10">
                 <div className="flex items-center justify-between">
                   {steps.map((s, index) => (
                     <div key={s.id} className="flex items-center">
                       <div
                         className={cn(
-                          "flex h-10 w-10 items-center justify-center rounded-full text-sm font-semibold transition-colors",
+                          "flex h-10 w-10 items-center justify-center rounded-full text-sm font-regular transition-colors",
                           index <= currentStepIndex
                             ? "bg-accent text-accent-foreground"
                             : "bg-secondary text-muted-foreground"
                         )}
                       >
                         {index < currentStepIndex ? (
-                          <CheckCircle2 className="h-5 w-5" />
+                          <CircleCheckBig className="h-5 w-5" />
                         ) : (
                           index + 1
                         )}
@@ -203,7 +210,7 @@ export default function VerifyPage() {
                       {index < steps.length - 1 && (
                         <div
                           className={cn(
-                            "h-1 w-16 sm:w-24 mx-2 rounded-full transition-colors",
+                            "h-1 w-20 sm:w-24 mx-2 rounded-full transition-colors",
                             index < currentStepIndex ? "bg-accent" : "bg-secondary"
                           )}
                         />
@@ -220,7 +227,6 @@ export default function VerifyPage() {
                 </div>
               </div>
               
-              {/* Step Content */}
               <Card className="animate-scale-in">
                 {step === "vin" && (
                   <>
@@ -415,7 +421,7 @@ export default function VerifyPage() {
                       </div>
                       
                       <Link to="/dashboard">
-                        <Button variant="accent" size="lg" className="w-full">
+                        <Button variant="accent" size="lg" className="w-full mt-4">
                           Go to Dashboard
                           <ArrowRight className="h-5 w-5 ml-2" />
                         </Button>

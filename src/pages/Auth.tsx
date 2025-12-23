@@ -127,25 +127,20 @@ export default function AuthPage() {
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   
-  // Signup flow state
   const [signupStep, setSignupStep] = useState<SignupStep>("account");
   const [userId, setUserId] = useState<string | null>(null);
   
-  // Plan selection
   const [selectedPlan, setSelectedPlan] = useState<"basic" | "plus" | "auto_plus">("plus");
   
-  // Vehicle verification
   const [vin, setVin] = useState("");
   const [licensePlate, setLicensePlate] = useState("");
   const [verificationMethod, setVerificationMethod] = useState<"vin" | "plate" | null>(null);
   const [insuranceProvider, setInsuranceProvider] = useState("");
   const [policyNumber, setPolicyNumber] = useState("");
   
-  // Bank connection
   const [selectedBank, setSelectedBank] = useState<string | null>(null);
   const [settlementTiming, setSettlementTiming] = useState<"payday" | "month-end" | null>(null);
   
-  // Identity verification
   const [fullName, setFullName] = useState("");
   const [address, setAddress] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -158,7 +153,6 @@ export default function AuthPage() {
   const paystubInputRef = useRef<HTMLInputElement>(null);
   const carInsuranceInputRef = useRef<HTMLInputElement>(null);
 
-  // Bills upload
   const [bills, setBills] = useState<Array<{ name: string; amount: string; category: string; dueDate: string }>>([]);
   const [newBillName, setNewBillName] = useState("");
   const [newBillAmount, setNewBillAmount] = useState("");
@@ -166,7 +160,6 @@ export default function AuthPage() {
   const [newBillDueDate, setNewBillDueDate] = useState("");
   const billFileInputRef = useRef<HTMLInputElement>(null);
 
-  // Credit card payment
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [cardNumber, setCardNumber] = useState("");
   const [cardExpiry, setCardExpiry] = useState("");
@@ -295,7 +288,6 @@ export default function AuthPage() {
     setUploadingDocs(true);
     
     try {
-      // Upload driver's license
       const dlPath = `${userId}/drivers-license-${Date.now()}`;
       const { error: dlError } = await supabase.storage
         .from("user-documents")
@@ -303,7 +295,6 @@ export default function AuthPage() {
       
       if (dlError) throw dlError;
       
-      // Upload paystub
       const psPath = `${userId}/paystub-${Date.now()}`;
       const { error: psError } = await supabase.storage
         .from("user-documents")
@@ -311,7 +302,6 @@ export default function AuthPage() {
       
       if (psError) throw psError;
 
-      // Upload car insurance
       const ciPath = `${userId}/car-insurance-${Date.now()}`;
       const { error: ciError } = await supabase.storage
         .from("user-documents")
@@ -319,7 +309,6 @@ export default function AuthPage() {
       
       if (ciError) throw ciError;
 
-      // Update profile with document paths
       const { error: profileError } = await supabase
         .from("profiles")
         .update({
@@ -385,7 +374,6 @@ export default function AuthPage() {
     setIsLoading(true);
 
     try {
-      // Only insert vehicle if user provided info
       if (verificationMethod && (vin || licensePlate)) {
         const { error: vehicleError } = await supabase.from("vehicles").insert({
           user_id: userId,
@@ -402,7 +390,6 @@ export default function AuthPage() {
 
         if (vehicleError) throw vehicleError;
 
-        // Update subscription to auto_plus with higher limit
         const { error: subError } = await supabase
           .from("subscriptions")
           .update({ 
@@ -442,7 +429,6 @@ export default function AuthPage() {
     setIsLoading(true);
 
     try {
-      // Only insert bank if user selected one
       if (selectedBank) {
         const bankName = banks.find(b => b.id === selectedBank)?.name || "Bank";
         
@@ -457,7 +443,6 @@ export default function AuthPage() {
         if (bankError) console.error("Bank insert error:", bankError);
       }
 
-      // Update subscription with settlement timing if selected
       if (settlementTiming) {
         const nextSettlement = addDays(new Date(), 30);
         const { error: subError } = await supabase
@@ -472,7 +457,6 @@ export default function AuthPage() {
         if (subError) console.error("Subscription update error:", subError);
       }
 
-      // Process payment
       await new Promise(resolve => setTimeout(resolve, 2000));
       
       toast({
@@ -534,7 +518,6 @@ export default function AuthPage() {
     setIsLoading(true);
 
     try {
-      // Save bills to database
       for (const bill of bills) {
         await supabase.from("bills").insert({
           user_id: userId,
@@ -572,7 +555,6 @@ export default function AuthPage() {
     setProcessingPayment(true);
 
     try {
-      // Simulate payment processing
       await new Promise(resolve => setTimeout(resolve, 2000));
 
       toast({
@@ -615,7 +597,24 @@ export default function AuthPage() {
   const currentStepIndex = signupSteps.findIndex(s => s.id === signupStep);
   const currentPlan = plans.find(p => p.tier === selectedPlan);
 
-  // Sign in form
+  const handleSwitchToSignUp = () => {
+    setIsSignUp(true);
+    setSignupStep("account");
+    setErrors({});
+  };
+
+  const handleSwitchToSignIn = () => {
+    setIsSignUp(false);
+    setErrors({});
+  };
+
+  const handleVerifyContinue = async () => {
+    await handleVehicleVerification();
+    if (fullName && address && phoneNumber && ssn && driverLicenseFile && paystubFile && carInsuranceFile) {
+      await handleIdentityVerification();
+    }
+  };
+
   if (!isSignUp) {
     return (
       <div className="min-h-screen flex flex-col bg-background">
@@ -694,11 +693,7 @@ export default function AuthPage() {
                     Don't have an account?{" "}
                     <button
                       type="button"
-                      onClick={() => {
-                        setIsSignUp(true);
-                        setSignupStep("account");
-                        setErrors({});
-                      }}
+                      onClick={handleSwitchToSignUp}
                       className="text-accent font-medium hover:underline"
                     >
                       Create one
@@ -720,12 +715,10 @@ export default function AuthPage() {
     );
   }
 
-  // Sign up flow
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <div className="flex-1 flex items-center justify-center p-4 py-8">
         <div className="w-full max-w-xl">
-          {/* Logo */}
           <div className="text-center mb-6">
             <Link to="/" className="inline-flex items-center gap-2">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent">
@@ -735,7 +728,6 @@ export default function AuthPage() {
             </Link>
           </div>
 
-          {/* Progress Steps */}
           {signupStep !== "complete" && (
             <div className="mb-8">
               <div className="flex items-center justify-center gap-2">
@@ -774,7 +766,6 @@ export default function AuthPage() {
             </div>
           )}
 
-          {/* Step: Account Creation */}
           {signupStep === "account" && (
             <Card className="animate-scale-in">
               <CardHeader className="text-center">
@@ -871,10 +862,7 @@ export default function AuthPage() {
                     Already have an account?{" "}
                     <button
                       type="button"
-                      onClick={() => {
-                        setIsSignUp(false);
-                        setErrors({});
-                      }}
+                      onClick={handleSwitchToSignIn}
                       className="text-accent font-medium hover:underline"
                     >
                       Sign in
@@ -885,7 +873,6 @@ export default function AuthPage() {
             </Card>
           )}
 
-          {/* Step: Verify (Vehicle + Identity Combined) */}
           {signupStep === "verify" && (
             <Card className="animate-scale-in">
               <CardHeader className="text-center pb-4">
@@ -898,7 +885,6 @@ export default function AuthPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Vehicle Section */}
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
                     <Car className="h-4 w-4 text-accent" />
@@ -1109,12 +1095,7 @@ export default function AuthPage() {
                   <Button
                     variant="accent"
                     className="flex-1"
-                    onClick={async () => {
-                      await handleVehicleVerification();
-                      if (fullName && address && phoneNumber && ssn && driverLicenseFile && paystubFile && carInsuranceFile) {
-                        await handleIdentityVerification();
-                      }
-                    }}
+                    onClick={handleVerifyContinue}
                     disabled={isLoading || uploadingDocs}
                   >
                     {(isLoading || uploadingDocs) ? (
@@ -1134,7 +1115,6 @@ export default function AuthPage() {
             </Card>
           )}
 
-          {/* Step: Plan Selection */}
           {signupStep === "plan" && (
             <Card className="animate-scale-in">
               <CardHeader className="text-center">
@@ -1194,7 +1174,6 @@ export default function AuthPage() {
             </Card>
           )}
 
-          {/* Step: Bills Upload */}
           {signupStep === "bills" && (
             <Card className="animate-scale-in">
               <CardHeader className="text-center pb-4">
@@ -1207,7 +1186,6 @@ export default function AuthPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Added Bills List */}
                 {bills.length > 0 && (
                   <div className="space-y-2">
                     {bills.map((bill, index) => (
@@ -1246,7 +1224,6 @@ export default function AuthPage() {
                   </div>
                 )}
 
-                {/* Add Bill Form */}
                 <div className="space-y-3 border border-border rounded-lg p-4">
                   <div className="flex items-center gap-2">
                     <Plus className="h-4 w-4 text-accent" />
@@ -1346,7 +1323,6 @@ export default function AuthPage() {
             </Card>
           )}
 
-          {/* Step: Payment */}
           {signupStep === "payment" && (
             <Card className="animate-scale-in">
               <CardHeader className="text-center pb-4">
@@ -1359,7 +1335,6 @@ export default function AuthPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Payment Summary */}
                 <div className="rounded-lg border border-border bg-secondary/30 p-4 space-y-2">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Plan</span>
@@ -1400,7 +1375,6 @@ export default function AuthPage() {
             </Card>
           )}
 
-          {/* Step: Complete */}
           {signupStep === "complete" && (
             <div className="text-center animate-scale-in">
               <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-success/10 text-success animate-pulse-glow">
@@ -1436,7 +1410,6 @@ export default function AuthPage() {
             </div>
           )}
 
-          {/* Terms */}
           {signupStep !== "complete" && (
             <p className="text-center text-sm text-muted-foreground mt-6">
               By continuing, you agree to our{" "}
@@ -1448,7 +1421,6 @@ export default function AuthPage() {
         </div>
       </div>
 
-      {/* Credit Card Payment Modal */}
       <Dialog open={showPaymentModal} onOpenChange={setShowPaymentModal}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>

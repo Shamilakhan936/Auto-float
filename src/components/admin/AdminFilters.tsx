@@ -40,7 +40,6 @@ export function AdminFilters({
         <span className="text-sm font-medium text-muted-foreground">Filters:</span>
       </div>
       
-      {/* Status Filter */}
       <div className="flex items-center gap-2">
         <Label className="text-xs text-muted-foreground">Status</Label>
         <Select value={statusFilter} onValueChange={onStatusFilterChange}>
@@ -58,7 +57,6 @@ export function AdminFilters({
         </Select>
       </div>
 
-      {/* Date From */}
       <div className="flex items-center gap-2">
         <Label className="text-xs text-muted-foreground">From</Label>
         <Popover>
@@ -86,7 +84,6 @@ export function AdminFilters({
         </Popover>
       </div>
 
-      {/* Date To */}
       <div className="flex items-center gap-2">
         <Label className="text-xs text-muted-foreground">To</Label>
         <Popover>
@@ -114,13 +111,12 @@ export function AdminFilters({
         </Popover>
       </div>
 
-      {/* Clear Filters */}
       {hasActiveFilters && (
         <Button
           variant="ghost"
           size="sm"
           onClick={onClearFilters}
-          className="h-9 px-3 text-muted-foreground hover:text-foreground hover:bg-destructive/10 hover:text-destructive rounded-xl"
+          className="h-9 px-3 text-muted-foreground hover:bg-destructive/10 hover:text-destructive rounded-xl"
         >
           <X className="h-3 w-3 mr-1" />
           Clear

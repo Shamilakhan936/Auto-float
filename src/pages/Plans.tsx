@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -45,6 +45,13 @@ const plans = [
     features: ["Auto Verification", "Insurance Verification", "Priority Support"],
     popular: false,
   },
+];
+
+const trustBadges = [
+  "No Interest",
+  "No Late Fees",
+  "Pause Anytime",
+  "Auto-Settlement",
 ];
 
 export default function PlansPage() {
@@ -121,12 +128,26 @@ export default function PlansPage() {
     }
   };
 
+  const handlePlanButtonClick = (e: React.MouseEvent, tier: string) => {
+    e.stopPropagation();
+    handleSelectPlan(tier);
+  };
+
+  const getButtonContent = (tier: string) => {
+    if (updating && selectedPlan === tier) {
+      return <Loader2 className="h-4 w-4 animate-spin" />;
+    }
+    if (currentTier === tier) {
+      return "Current Plan";
+    }
+    return "Choose Plan";
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
       
       <main className="flex-1">
-        {/* Hero */}
         <section className="py-16 md:py-24">
           <div className="container px-4">
             <div className="mx-auto max-w-2xl text-center mb-12">
@@ -141,7 +162,6 @@ export default function PlansPage() {
               </p>
             </div>
             
-            {/* Plan Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
               {plans.map((plan, index) => (
                 <Card
@@ -155,22 +175,21 @@ export default function PlansPage() {
                   style={{ animationDelay: `${index * 100}ms` }}
                   onClick={() => setSelectedPlan(plan.tier)}
                 >
-                  {currentTier === plan.tier && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                      <Badge variant="success" className="shadow-md">
-                        Current Plan
-                      </Badge>
-                    </div>
-                  )}
-                  {plan.popular && currentTier !== plan.tier && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                      <Badge variant="accent" className="shadow-md">
-                        Most Popular
-                      </Badge>
-                    </div>
-                  )}
-                  
-                  <CardHeader className="text-center pb-2">
+                  <CardHeader className="text-center pb-2 pt-6">
+                    {currentTier === plan.tier && (
+                      <div className="mb-4">
+                        <Badge variant="success" className="shadow-md">
+                          Current Plan
+                        </Badge>
+                      </div>
+                    )}
+                    {plan.popular && currentTier !== plan.tier && (
+                      <div className="mb-4">
+                        <Badge variant="accent" className="shadow-md">
+                          Most Popular
+                        </Badge>
+                      </div>
+                    )}
                     <div className={cn(
                       "mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl",
                       plan.popular ? "bg-accent text-accent-foreground" : "bg-primary/10 text-primary"
@@ -210,41 +229,24 @@ export default function PlansPage() {
                     <Button
                       variant={plan.popular ? "accent" : "outline"}
                       className="w-full"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleSelectPlan(plan.tier);
-                      }}
+                      onClick={(e) => handlePlanButtonClick(e, plan.tier)}
                       disabled={updating || currentTier === plan.tier}
                     >
-                      {updating && selectedPlan === plan.tier ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : currentTier === plan.tier ? (
-                        "Current Plan"
-                      ) : (
-                        "Choose Plan"
-                      )}
+                      {getButtonContent(plan.tier)}
                     </Button>
                   </CardContent>
                 </Card>
               ))}
             </div>
             
-            {/* Trust badges */}
             <div className="mt-16 text-center">
               <p className="text-sm text-muted-foreground mb-4">All plans include:</p>
               <div className="flex flex-wrap items-center justify-center gap-6">
-                <Badge variant="outline" className="text-sm py-2 px-4">
-                  No Interest
-                </Badge>
-                <Badge variant="outline" className="text-sm py-2 px-4">
-                  No Late Fees
-                </Badge>
-                <Badge variant="outline" className="text-sm py-2 px-4">
-                  Pause Anytime
-                </Badge>
-                <Badge variant="outline" className="text-sm py-2 px-4">
-                  Auto-Settlement
-                </Badge>
+                {trustBadges.map((badge) => (
+                  <Badge key={badge} variant="outline" className="text-sm py-2 px-4">
+                    {badge}
+                  </Badge>
+                ))}
               </div>
             </div>
           </div>
