@@ -74,54 +74,30 @@ const StatCard = ({
   );
 };
 
+const statsConfig = [
+  { key: "totalUsers", title: "Total Users", icon: Users },
+  { key: "activeSubscriptions", title: "Active Subscriptions", icon: Activity, variant: "info" as const },
+  { key: "totalBills", title: "Total Bills", icon: FileText },
+  { key: "pendingBills", title: "Pending Bills", icon: XCircle, variant: "warning" as const },
+  { key: "paidBills", title: "Paid Bills", icon: CheckCircle, variant: "success" as const },
+  { key: "totalRevenue", title: "Bill Value", icon: DollarSign, prefix: "$" },
+  { key: "totalVehicles", title: "Total Vehicles", icon: Car },
+  { key: "verifiedVehicles", title: "Verified Vehicles", icon: Shield, variant: "success" as const },
+];
+
 export const AdminStats = ({ stats }: AdminStatsProps) => {
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-      <StatCard 
-        title="Total Users" 
-        value={stats.totalUsers} 
-        icon={Users} 
-      />
-      <StatCard 
-        title="Active Subscriptions" 
-        value={stats.activeSubscriptions} 
-        icon={Activity}
-        variant="info"
-      />
-      <StatCard 
-        title="Total Bills" 
-        value={stats.totalBills} 
-        icon={FileText} 
-      />
-      <StatCard 
-        title="Pending Bills" 
-        value={stats.pendingBills} 
-        icon={XCircle}
-        variant="warning"
-      />
-      <StatCard 
-        title="Paid Bills" 
-        value={stats.paidBills} 
-        icon={CheckCircle}
-        variant="success"
-      />
-      <StatCard 
-        title="Bill Value" 
-        value={stats.totalRevenue} 
-        icon={DollarSign}
-        prefix="$"
-      />
-      <StatCard 
-        title="Total Vehicles" 
-        value={stats.totalVehicles} 
-        icon={Car} 
-      />
-      <StatCard 
-        title="Verified Vehicles" 
-        value={stats.verifiedVehicles} 
-        icon={Shield}
-        variant="success"
-      />
+      {statsConfig.map((config) => (
+        <StatCard
+          key={config.key}
+          title={config.title}
+          value={stats[config.key as keyof typeof stats]}
+          icon={config.icon}
+          variant={config.variant}
+          prefix={config.prefix}
+        />
+      ))}
     </div>
   );
 };

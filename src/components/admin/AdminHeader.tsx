@@ -20,9 +20,11 @@ export const AdminHeader = () => {
     navigate("/");
   };
 
+  const handleGoToDashboard = () => navigate("/dashboard");
+  const handleGoToSettings = () => navigate("/settings");
+
   return (
     <div className="relative overflow-hidden">
-      {/* Gradient background */}
       <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-info/5" />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary/10 via-transparent to-transparent" />
       
@@ -32,7 +34,7 @@ export const AdminHeader = () => {
             <Button 
               variant="ghost" 
               size="icon" 
-              onClick={() => navigate("/dashboard")}
+              onClick={handleGoToDashboard}
               className="hover:bg-primary/10 hover:text-primary transition-all duration-300"
             >
               <ArrowLeft className="h-5 w-5" />
@@ -73,14 +75,14 @@ export const AdminHeader = () => {
               </div>
               <DropdownMenuSeparator className="bg-border/30" />
               <DropdownMenuItem 
-                onClick={() => navigate("/dashboard")}
+                onClick={handleGoToDashboard}
                 className="rounded-lg cursor-pointer"
               >
                 <User className="h-4 w-4 mr-2" />
                 Dashboard
               </DropdownMenuItem>
               <DropdownMenuItem 
-                onClick={() => navigate("/settings")}
+                onClick={handleGoToSettings}
                 className="rounded-lg cursor-pointer"
               >
                 <Settings className="h-4 w-4 mr-2" />

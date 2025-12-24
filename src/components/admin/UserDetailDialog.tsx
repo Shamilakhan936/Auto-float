@@ -38,7 +38,6 @@ export function UserDetailDialog({ user, open, onOpenChange }: UserDetailDialogP
         </DialogHeader>
         
         <div className="space-y-6">
-          {/* Basic Info */}
           <div className="space-y-3">
             <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Basic Information</h4>
             <div className="grid grid-cols-2 gap-4">
@@ -76,7 +75,6 @@ export function UserDetailDialog({ user, open, onOpenChange }: UserDetailDialogP
             </div>
           </div>
 
-          {/* Documents */}
           <div className="space-y-3">
             <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Documents</h4>
             <div className="grid grid-cols-1 gap-2">
@@ -110,7 +108,6 @@ export function UserDetailDialog({ user, open, onOpenChange }: UserDetailDialogP
             </div>
           </div>
 
-          {/* Referral Info */}
           <div className="space-y-3">
             <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Referral</h4>
             <div className="grid grid-cols-2 gap-4">
@@ -125,7 +122,6 @@ export function UserDetailDialog({ user, open, onOpenChange }: UserDetailDialogP
             </div>
           </div>
 
-          {/* IDs */}
           <div className="space-y-3 pt-3 border-t border-border/50">
             <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">System IDs</h4>
             <div className="space-y-2">

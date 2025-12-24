@@ -40,7 +40,6 @@ export function AdminCharts({ stats, subscriptionTiers, billCategories, monthlyT
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {/* Subscription Tiers */}
         <Card className="bg-card/50 border-border/50">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Subscription Distribution</CardTitle>
@@ -64,7 +63,6 @@ export function AdminCharts({ stats, subscriptionTiers, billCategories, monthlyT
           </CardContent>
         </Card>
 
-        {/* Vehicle Verification Status */}
         <Card className="bg-card/50 border-border/50">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Vehicle Verification</CardTitle>
@@ -99,7 +97,6 @@ export function AdminCharts({ stats, subscriptionTiers, billCategories, monthlyT
           </CardContent>
         </Card>
 
-        {/* Bill Status Distribution */}
         <Card className="bg-card/50 border-border/50">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Bill Status</CardTitle>
@@ -134,7 +131,6 @@ export function AdminCharts({ stats, subscriptionTiers, billCategories, monthlyT
           </CardContent>
         </Card>
 
-        {/* Top Bill Categories */}
         {billCategories.length > 0 && (
           <Card className="bg-card/50 border-border/50 md:col-span-2">
             <CardHeader className="pb-2">
@@ -161,7 +157,6 @@ export function AdminCharts({ stats, subscriptionTiers, billCategories, monthlyT
           </Card>
         )}
 
-        {/* Monthly Trend */}
         {monthlyTrend.length > 0 && (
           <Card className="bg-card/50 border-border/50">
             <CardHeader className="pb-2">
