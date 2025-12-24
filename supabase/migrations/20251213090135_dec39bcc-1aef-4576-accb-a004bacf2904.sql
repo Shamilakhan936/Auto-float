@@ -1,10 +1,7 @@
--- Create subscription tier enum
 CREATE TYPE public.subscription_tier AS ENUM ('basic', 'plus', 'auto_plus');
 
--- Create bill status enum
 CREATE TYPE public.bill_status AS ENUM ('pending', 'scheduled', 'paid', 'failed');
 
--- Create profiles table
 CREATE TABLE public.profiles (
   id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL UNIQUE,
@@ -15,7 +12,6 @@ CREATE TABLE public.profiles (
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 );
 
--- Create subscriptions table
 CREATE TABLE public.subscriptions (
   id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL UNIQUE,
@@ -29,7 +25,6 @@ CREATE TABLE public.subscriptions (
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 );
 
--- Create vehicles table for auto verification
 CREATE TABLE public.vehicles (
   id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
@@ -46,7 +41,6 @@ CREATE TABLE public.vehicles (
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 );
 
--- Create bank accounts table
 CREATE TABLE public.bank_accounts (
   id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
@@ -58,7 +52,6 @@ CREATE TABLE public.bank_accounts (
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 );
 
--- Create bills table
 CREATE TABLE public.bills (
   id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
@@ -72,14 +65,12 @@ CREATE TABLE public.bills (
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 );
 
--- Enable Row Level Security on all tables
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.subscriptions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.vehicles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.bank_accounts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.bills ENABLE ROW LEVEL SECURITY;
 
--- RLS Policies for profiles
 CREATE POLICY "Users can view their own profile"
 ON public.profiles FOR SELECT
 USING (auth.uid() = user_id);
@@ -92,7 +83,6 @@ CREATE POLICY "Users can insert their own profile"
 ON public.profiles FOR INSERT
 WITH CHECK (auth.uid() = user_id);
 
--- RLS Policies for subscriptions
 CREATE POLICY "Users can view their own subscription"
 ON public.subscriptions FOR SELECT
 USING (auth.uid() = user_id);
@@ -105,7 +95,6 @@ CREATE POLICY "Users can insert their own subscription"
 ON public.subscriptions FOR INSERT
 WITH CHECK (auth.uid() = user_id);
 
--- RLS Policies for vehicles
 CREATE POLICY "Users can view their own vehicles"
 ON public.vehicles FOR SELECT
 USING (auth.uid() = user_id);
@@ -114,7 +103,6 @@ CREATE POLICY "Users can manage their own vehicles"
 ON public.vehicles FOR ALL
 USING (auth.uid() = user_id);
 
--- RLS Policies for bank_accounts
 CREATE POLICY "Users can view their own bank accounts"
 ON public.bank_accounts FOR SELECT
 USING (auth.uid() = user_id);
@@ -123,7 +111,6 @@ CREATE POLICY "Users can manage their own bank accounts"
 ON public.bank_accounts FOR ALL
 USING (auth.uid() = user_id);
 
--- RLS Policies for bills
 CREATE POLICY "Users can view their own bills"
 ON public.bills FOR SELECT
 USING (auth.uid() = user_id);
@@ -132,7 +119,6 @@ CREATE POLICY "Users can manage their own bills"
 ON public.bills FOR ALL
 USING (auth.uid() = user_id);
 
--- Create function to update timestamps
 CREATE OR REPLACE FUNCTION public.update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -141,7 +127,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SET search_path = public;
 
--- Create triggers for automatic timestamp updates
 CREATE TRIGGER update_profiles_updated_at
 BEFORE UPDATE ON public.profiles
 FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
