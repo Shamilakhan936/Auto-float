@@ -1,5 +1,7 @@
-import { Header } from "@/components/layout/Header";
-import { Footer } from "@/components/layout/Footer";
+import { lazy, Suspense } from "react";
+
+const Header = lazy(() => import("@/components/layout/Header").then(m => ({ default: m.Header })));
+const Footer = lazy(() => import("@/components/layout/Footer").then(m => ({ default: m.Footer })));
 import { Badge } from "@/components/ui/badge";
 import { Users, Target, Heart, Zap } from "lucide-react";
 
@@ -29,7 +31,9 @@ const values = [
 export default function AboutPage() {
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <Header />
+      <Suspense fallback={<div className="h-16 bg-card animate-pulse" />}>
+        <Header />
+      </Suspense>
       
       <main className="flex-1">
         <section className="py-16 md:py-24">
@@ -100,7 +104,9 @@ export default function AboutPage() {
         </section>
       </main>
       
-      <Footer />
+      <Suspense fallback={<div className="h-32 bg-card animate-pulse" />}>
+        <Footer />
+      </Suspense>
     </div>
   );
 }

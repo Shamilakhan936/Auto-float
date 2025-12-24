@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, lazy, Suspense } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -29,12 +29,13 @@ import {
   Gift,
   Copy
 } from "lucide-react";
-import { Header } from "@/components/layout/Header";
-import { Footer } from "@/components/layout/Footer";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { format, addDays } from "date-fns";
+
+const Header = lazy(() => import("@/components/layout/Header").then(m => ({ default: m.Header })));
+const Footer = lazy(() => import("@/components/layout/Footer").then(m => ({ default: m.Footer })));
 
 const categoryIcons: Record<string, typeof Home> = {
   Rent: Home,
@@ -55,6 +56,38 @@ const tierNames = {
   plus: "Plus",
   auto_plus: "AutoFloat",
 };
+
+const billCategories = [
+  { value: "rent", label: "Rent/Mortgage" },
+  { value: "utilities", label: "Utilities" },
+  { value: "phone", label: "Phone/Internet" },
+  { value: "insurance", label: "Insurance" },
+  { value: "childcare", label: "Childcare" },
+  { value: "daycare", label: "Daycare" },
+  { value: "auto", label: "Auto" },
+  { value: "tolls", label: "Tolls" },
+  { value: "parking", label: "Parking Tickets" },
+  { value: "beauty", label: "Beauty/Personal Care" },
+  { value: "groceries", label: "Groceries" },
+  { value: "medical", label: "Medical/Healthcare" },
+  { value: "subscriptions", label: "Subscriptions" },
+  { value: "home_maintenance", label: "Home Maintenance" },
+  { value: "pest_control", label: "Pest Control" },
+  { value: "lawn_care", label: "Lawn Care" },
+  { value: "security", label: "Home Security" },
+  { value: "hoa", label: "HOA Fees" },
+  { value: "trash", label: "Trash/Recycling" },
+  { value: "water", label: "Water/Sewer" },
+  { value: "other", label: "Other" },
+];
+
+const quickActionsConfig = [
+  { icon: Plus, label: "Add Bill", description: "Schedule new payment", action: "addBill" as const },
+  { icon: CreditCard, label: "Bank Account", description: "Connect bank", action: "bank" as const },
+  { icon: Car, label: "Vehicle Info", description: "Not verified", action: "vehicle" as const },
+  { icon: Shield, label: "Settings", description: "Manage account", link: "/settings" },
+  { icon: ArrowUpRight, label: "Upgrade Plan", description: "Increase your limit", link: "/plans" },
+];
 
 interface Bill {
   id: string;
@@ -149,77 +182,45 @@ export default function DashboardPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const { data: subData, error: subError } = await supabase
-        .from("subscriptions")
-        .select("*")
-        .eq("user_id", user!.id)
-        .maybeSingle();
-      
-      if (subError) throw subError;
-      if (subData) {
-        setSubscription(subData as Subscription);
-      }
+      const [
+        { data: subData, error: subError },
+        { data: billsData, error: billsError },
+        { data: vehicleData, error: vehicleError },
+        { data: bankData, error: bankError },
+        { data: plansData, error: plansError },
+        { data: installmentsData, error: installmentsError },
+        { data: profileData }
+      ] = await Promise.all([
+        supabase.from("subscriptions").select("*").eq("user_id", user!.id).maybeSingle(),
+        supabase.from("bills").select("*").eq("user_id", user!.id).order("due_date", { ascending: true }),
+        supabase.from("vehicles").select("*").eq("user_id", user!.id).maybeSingle(),
+        supabase.from("bank_accounts").select("*").eq("user_id", user!.id).eq("is_primary", true).maybeSingle(),
+        supabase.from("payment_plans").select("*").eq("user_id", user!.id).order("created_at", { ascending: false }),
+        supabase.from("payment_installments").select("*").eq("user_id", user!.id).order("due_date", { ascending: true }),
+        supabase.from("profiles").select("referral_code").eq("user_id", user!.id).maybeSingle()
+      ]);
 
-      const { data: billsData, error: billsError } = await supabase
-        .from("bills")
-        .select("*")
-        .eq("user_id", user!.id)
-        .order("due_date", { ascending: true });
-      
+      if (subError) throw subError;
+      if (subData) setSubscription(subData as Subscription);
+
       if (billsError) throw billsError;
       setBills((billsData as Bill[]) || []);
 
-      const { data: vehicleData, error: vehicleError } = await supabase
-        .from("vehicles")
-        .select("*")
-        .eq("user_id", user!.id)
-        .maybeSingle();
-      
       if (vehicleError && vehicleError.code !== "PGRST116") throw vehicleError;
-      if (vehicleData) {
-        setVehicle(vehicleData as Vehicle);
-      }
+      if (vehicleData) setVehicle(vehicleData as Vehicle);
 
-      const { data: bankData, error: bankError } = await supabase
-        .from("bank_accounts")
-        .select("*")
-        .eq("user_id", user!.id)
-        .eq("is_primary", true)
-        .maybeSingle();
-      
       if (bankError && bankError.code !== "PGRST116") throw bankError;
-      if (bankData) {
-        setBankAccount(bankData as BankAccount);
-      }
+      if (bankData) setBankAccount(bankData as BankAccount);
 
-      const { data: plansData, error: plansError } = await supabase
-        .from("payment_plans")
-        .select("*")
-        .eq("user_id", user!.id)
-        .order("created_at", { ascending: false });
-      
       if (plansError) throw plansError;
       setPaymentPlans((plansData as PaymentPlan[]) || []);
 
-      const { data: installmentsData, error: installmentsError } = await supabase
-        .from("payment_installments")
-        .select("*")
-        .eq("user_id", user!.id)
-        .order("due_date", { ascending: true });
-      
       if (installmentsError) throw installmentsError;
       setInstallments((installmentsData as PaymentInstallment[]) || []);
 
-      const { data: profileData } = await supabase
-        .from("profiles")
-        .select("referral_code")
-        .eq("user_id", user!.id)
-        .maybeSingle();
-      
       if (profileData?.referral_code) {
         setReferralCode(profileData.referral_code);
       }
-
     } catch (error) {
       console.error("Error fetching data:", error);
       toast({
@@ -306,11 +307,7 @@ export default function DashboardPage() {
         description: `${newBillName} has been added with a 4-week payment plan.`,
       });
 
-      setAddBillOpen(false);
-      setNewBillName("");
-      setNewBillCategory("");
-      setNewBillAmount("");
-      setNewBillDueDate("");
+      handleCloseAddBill();
       fetchData();
     } catch (error) {
       console.error("Error adding bill:", error);
@@ -324,15 +321,7 @@ export default function DashboardPage() {
     }
   };
 
-  if (authLoading || loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-accent" />
-      </div>
-    );
-  }
-
-  if (!user) {
+  if (!user && !authLoading) {
     return null;
   }
 
@@ -426,17 +415,71 @@ export default function DashboardPage() {
     }
   };
 
+  const handleQuickActionClick = (action: "addBill" | "bank" | "vehicle") => {
+    if (action === "addBill") {
+      setAddBillOpen(true);
+    } else if (action === "bank") {
+      setManageBankOpen(true);
+    } else if (action === "vehicle") {
+      setManageVehicleOpen(true);
+    }
+  };
+
+  const handleCloseAddBill = () => {
+    setAddBillOpen(false);
+    setNewBillName("");
+    setNewBillCategory("");
+    setNewBillAmount("");
+    setNewBillDueDate("");
+  };
+
+  const handleBillNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setNewBillName(e.target.value);
+  };
+
+  const handleBillAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setNewBillAmount(e.target.value);
+  };
+
+  const handleBillDueDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setNewBillDueDate(e.target.value);
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <Header />
+      <Suspense fallback={<div className="h-16 bg-card animate-pulse" />}>
+        <Header />
+      </Suspense>
       
       <main className="flex-1 py-8 md:py-12">
         <div className="container px-4">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
-            <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-foreground">Dashboard</h1>
-              <p className="text-muted-foreground">Manage your bills and track your access.</p>
+          {loading ? (
+            <div className="space-y-8">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+                <div className="space-y-2">
+                  <div className="h-8 w-48 bg-secondary animate-pulse rounded" />
+                  <div className="h-4 w-64 bg-secondary animate-pulse rounded" />
+                </div>
+                <div className="h-10 w-32 bg-secondary animate-pulse rounded" />
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div className="md:col-span-2 h-48 bg-card animate-pulse rounded-xl" />
+                <div className="h-48 bg-card animate-pulse rounded-xl" />
+              </div>
+              
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="h-96 bg-card animate-pulse rounded-xl" />
+                <div className="h-96 bg-card animate-pulse rounded-xl" />
+              </div>
             </div>
+          ) : (
+            <>
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+                <div>
+                  <h1 className="text-2xl md:text-3xl font-bold text-foreground">Dashboard</h1>
+                  <p className="text-muted-foreground">Manage your bills and track your access.</p>
+                </div>
             <div className="flex items-center gap-3">
               {isVerified && (
                 <Badge variant="verified" className="py-2 px-4">
@@ -856,63 +899,52 @@ export default function DashboardPage() {
           </Card>
           
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-8">
-            <Card 
-              className="hover:border-accent/30 transition-colors cursor-pointer animate-fade-in [animation-delay:300ms] opacity-0"
-              onClick={() => setAddBillOpen(true)}
-            >
-              <CardContent className="flex flex-col items-center justify-center py-6 text-center">
-                <Plus className="h-8 w-8 text-accent mb-3" />
-                <p className="font-medium text-foreground">Add Bill</p>
-                <p className="text-xs text-muted-foreground">Schedule new payment</p>
-              </CardContent>
-            </Card>
-            <Card 
-              className="hover:border-accent/30 transition-colors cursor-pointer animate-fade-in [animation-delay:400ms] opacity-0"
-              onClick={() => setManageBankOpen(true)}
-            >
-              <CardContent className="flex flex-col items-center justify-center py-6 text-center">
-                <CreditCard className="h-8 w-8 text-accent mb-3" />
-                <p className="font-medium text-foreground">Bank Account</p>
-                <p className="text-xs text-muted-foreground">
-                  {bankAccount ? bankAccount.bank_name : "Connect bank"}
-                </p>
-              </CardContent>
-            </Card>
-            <Card 
-              className="hover:border-accent/30 transition-colors cursor-pointer animate-fade-in [animation-delay:500ms] opacity-0"
-              onClick={() => setManageVehicleOpen(true)}
-            >
-              <CardContent className="flex flex-col items-center justify-center py-6 text-center">
-                <Car className="h-8 w-8 text-accent mb-3" />
-                <p className="font-medium text-foreground">Vehicle Info</p>
-                <p className="text-xs text-muted-foreground">
-                  {isVerified ? "Verified" : "Not verified"}
-                </p>
-              </CardContent>
-            </Card>
-            <Link to="/settings">
-              <Card className="hover:border-accent/30 transition-colors cursor-pointer h-full animate-fade-in [animation-delay:550ms] opacity-0">
-                <CardContent className="flex flex-col items-center justify-center py-6 text-center">
-                  <Shield className="h-8 w-8 text-accent mb-3" />
-                  <p className="font-medium text-foreground">Settings</p>
-                  <p className="text-xs text-muted-foreground">Manage account</p>
-                </CardContent>
-              </Card>
-            </Link>
-            <Link to="/plans">
-              <Card className="hover:border-accent/30 transition-colors cursor-pointer h-full animate-fade-in [animation-delay:600ms] opacity-0">
-                <CardContent className="flex flex-col items-center justify-center py-6 text-center">
-                  <ArrowUpRight className="h-8 w-8 text-accent mb-3" />
-                  <p className="font-medium text-foreground">Upgrade Plan</p>
-                  <p className="text-xs text-muted-foreground">Increase your limit</p>
-                </CardContent>
-              </Card>
-            </Link>
+            {quickActionsConfig.map((action, index) => {
+              const Icon = action.icon;
+              const delay = 300 + (index * 50);
+              const description = action.action === "bank" 
+                ? (bankAccount ? bankAccount.bank_name : action.description)
+                : action.action === "vehicle"
+                ? (isVerified ? "Verified" : action.description)
+                : action.description;
+
+              if (action.link) {
+                return (
+                  <Link key={action.label} to={action.link}>
+                    <Card className={`hover:border-accent/30 transition-colors cursor-pointer h-full animate-fade-in [animation-delay:${delay}ms] opacity-0`}>
+                      <CardContent className="flex flex-col items-center justify-center py-6 text-center">
+                        <Icon className="h-8 w-8 text-accent mb-3" />
+                        <p className="font-medium text-foreground">{action.label}</p>
+                        <p className="text-xs text-muted-foreground">{action.description}</p>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                );
+              }
+
+              return (
+                <Card
+                  key={action.label}
+                  className={`hover:border-accent/30 transition-colors cursor-pointer animate-fade-in [animation-delay:${delay}ms] opacity-0`}
+                  onClick={() => action.action && handleQuickActionClick(action.action)}
+                >
+                  <CardContent className="flex flex-col items-center justify-center py-6 text-center">
+                    <Icon className="h-8 w-8 text-accent mb-3" />
+                    <p className="font-medium text-foreground">{action.label}</p>
+                    <p className="text-xs text-muted-foreground">{description}</p>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
+            </>
+          )}
         </div>
       </main>
       
-      <Footer />
+      <Suspense fallback={<div className="h-32 bg-card animate-pulse" />}>
+        <Footer />
+      </Suspense>
 
       <Dialog open={addBillOpen} onOpenChange={setAddBillOpen}>
         <DialogContent>
@@ -929,7 +961,7 @@ export default function DashboardPage() {
                 id="billName"
                 placeholder="e.g., Electric Bill"
                 value={newBillName}
-                onChange={(e) => setNewBillName(e.target.value)}
+                onChange={handleBillNameChange}
                 required
               />
             </div>
@@ -940,27 +972,11 @@ export default function DashboardPage() {
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="rent">Rent/Mortgage</SelectItem>
-                  <SelectItem value="utilities">Utilities</SelectItem>
-                  <SelectItem value="phone">Phone/Internet</SelectItem>
-                  <SelectItem value="insurance">Insurance</SelectItem>
-                  <SelectItem value="childcare">Childcare</SelectItem>
-                  <SelectItem value="daycare">Daycare</SelectItem>
-                  <SelectItem value="auto">Auto</SelectItem>
-                  <SelectItem value="tolls">Tolls</SelectItem>
-                  <SelectItem value="parking">Parking Tickets</SelectItem>
-                  <SelectItem value="beauty">Beauty/Personal Care</SelectItem>
-                  <SelectItem value="groceries">Groceries</SelectItem>
-                  <SelectItem value="medical">Medical/Healthcare</SelectItem>
-                  <SelectItem value="subscriptions">Subscriptions</SelectItem>
-                  <SelectItem value="home_maintenance">Home Maintenance</SelectItem>
-                  <SelectItem value="pest_control">Pest Control</SelectItem>
-                  <SelectItem value="lawn_care">Lawn Care</SelectItem>
-                  <SelectItem value="security">Home Security</SelectItem>
-                  <SelectItem value="hoa">HOA Fees</SelectItem>
-                  <SelectItem value="trash">Trash/Recycling</SelectItem>
-                  <SelectItem value="water">Water/Sewer</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
+                  {billCategories.map((cat) => (
+                    <SelectItem key={cat.value} value={cat.value}>
+                      {cat.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -973,7 +989,7 @@ export default function DashboardPage() {
                 min="0"
                 placeholder="0.00"
                 value={newBillAmount}
-                onChange={(e) => setNewBillAmount(e.target.value)}
+                onChange={handleBillAmountChange}
                 required
               />
             </div>
@@ -983,12 +999,12 @@ export default function DashboardPage() {
                 id="dueDate"
                 type="date"
                 value={newBillDueDate}
-                onChange={(e) => setNewBillDueDate(e.target.value)}
+                onChange={handleBillDueDateChange}
                 required
               />
             </div>
             <div className="flex gap-3 pt-4">
-              <Button type="button" variant="outline" className="flex-1" onClick={() => setAddBillOpen(false)}>
+              <Button type="button" variant="outline" className="flex-1" onClick={handleCloseAddBill}>
                 Cancel
               </Button>
               <Button type="submit" variant="accent" className="flex-1" disabled={submitting}>

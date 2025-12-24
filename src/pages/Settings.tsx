@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
+import { PageSkeleton } from "@/components/ui/PageSkeleton";
 import {
   User,
   Mail,
@@ -33,12 +34,13 @@ import {
   DollarSign,
   Clock,
 } from "lucide-react";
-import { Header } from "@/components/layout/Header";
-import { Footer } from "@/components/layout/Footer";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+
+const Header = lazy(() => import("@/components/layout/Header").then(m => ({ default: m.Header })));
+const Footer = lazy(() => import("@/components/layout/Footer").then(m => ({ default: m.Footer })));
 
 interface Profile {
   first_name: string | null;
@@ -162,44 +164,32 @@ export default function SettingsPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const { data: profileData } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("user_id", user!.id)
-        .maybeSingle();
+      const [
+        { data: profileData },
+        { data: subData },
+        { data: vehicleData },
+        { data: bankData },
+        { data: referralData }
+      ] = await Promise.all([
+        supabase.from("profiles").select("*").eq("user_id", user!.id).maybeSingle(),
+        supabase.from("subscriptions").select("*").eq("user_id", user!.id).maybeSingle(),
+        supabase.from("vehicles").select("*").eq("user_id", user!.id),
+        supabase.from("bank_accounts").select("*").eq("user_id", user!.id),
+        supabase.from("referrals").select("*").eq("referrer_id", user!.id)
+      ]);
 
       if (profileData) setProfile(profileData as Profile);
-
-      const { data: subData } = await supabase
-        .from("subscriptions")
-        .select("*")
-        .eq("user_id", user!.id)
-        .maybeSingle();
-
       if (subData) setSubscription(subData as Subscription);
-
-      const { data: vehicleData } = await supabase
-        .from("vehicles")
-        .select("*")
-        .eq("user_id", user!.id);
-
       if (vehicleData) setVehicles(vehicleData as Vehicle[]);
-
-      const { data: bankData } = await supabase
-        .from("bank_accounts")
-        .select("*")
-        .eq("user_id", user!.id);
-
       if (bankData) setBankAccounts(bankData as BankAccount[]);
-
-      const { data: referralData } = await supabase
-        .from("referrals")
-        .select("*")
-        .eq("referrer_id", user!.id);
-
       if (referralData) setReferrals(referralData as Referral[]);
     } catch (error) {
       console.error("Error fetching data:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load settings data.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -441,30 +431,30 @@ export default function SettingsPage() {
     toast({ title: "Copied!", description: "Referral code copied to clipboard." });
   };
 
-  if (authLoading || loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-accent" />
-      </div>
-    );
+  if (!user && !authLoading) {
+    return null;
   }
 
-  if (!user) return null;
-
-  const referralCode = profile?.referral_code || `REF-${user.id.slice(0, 8).toUpperCase()}`;
+  const referralCode = profile?.referral_code || `REF-${user?.id?.slice(0, 8).toUpperCase()}`;
   const totalReferralEarnings = referrals.reduce((sum, r) => sum + (r.reward_paid ? r.reward_amount : 0), 0);
   const pendingReferralEarnings = referrals.reduce((sum, r) => sum + (!r.reward_paid ? r.reward_amount : 0), 0);
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <Header />
+      <Suspense fallback={<div className="h-16 bg-card animate-pulse" />}>
+        <Header />
+      </Suspense>
 
       <main className="flex-1 py-8 md:py-12">
         <div className="container px-4 max-w-4xl">
-          <div className="mb-8">
-            <h1 className="text-2xl md:text-3xl font-bold text-foreground">Settings</h1>
-            <p className="text-muted-foreground">Manage your account, vehicles, and payment settings.</p>
-          </div>
+          {loading ? (
+            <PageSkeleton />
+          ) : (
+            <>
+              <div className="mb-8">
+                <h1 className="text-2xl md:text-3xl font-bold text-foreground">Settings</h1>
+                <p className="text-muted-foreground">Manage your account, vehicles, and payment settings.</p>
+              </div>
 
           <Tabs defaultValue="profile" className="space-y-6">
             <TabsList className="grid grid-cols-5 w-full">
@@ -957,10 +947,14 @@ export default function SettingsPage() {
               </Card>
             </TabsContent>
           </Tabs>
+            </>
+          )}
         </div>
       </main>
 
-      <Footer />
+      <Suspense fallback={<div className="h-32 bg-card animate-pulse" />}>
+        <Footer />
+      </Suspense>
 
       <Dialog open={editProfileOpen} onOpenChange={setEditProfileOpen}>
         <DialogContent>

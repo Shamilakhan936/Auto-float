@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, lazy, Suspense } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import { PageSkeleton, TableSkeleton } from "@/components/ui/PageSkeleton";
 import { 
   Users, FileText, Search, Car, CreditCard,
   Landmark, Gift, Calendar, Eye, Pencil, Trash2, MoreHorizontal,
@@ -13,28 +14,29 @@ import {
 } from "lucide-react";
 import { format, isAfter, isBefore, startOfDay, endOfDay } from "date-fns";
 import { toast } from "sonner";
-import { AdminStats } from "@/components/admin/AdminStats";
-import { AdminHeader } from "@/components/admin/AdminHeader";
 import { AdminTableWrapper, paginate } from "@/components/admin/AdminTableWrapper";
-import { EmptyState } from "@/components/admin/EmptyState";
-import { UserDetailDialog } from "@/components/admin/UserDetailDialog";
-import { EditUserDialog } from "@/components/admin/EditUserDialog";
-import { EditBillDialog } from "@/components/admin/EditBillDialog";
-import { EditVehicleDialog } from "@/components/admin/EditVehicleDialog";
-import { EditSubscriptionDialog } from "@/components/admin/EditSubscriptionDialog";
-import { EditPaymentPlanDialog } from "@/components/admin/EditPaymentPlanDialog";
-import { EditBankAccountDialog } from "@/components/admin/EditBankAccountDialog";
-import { DeleteConfirmDialog } from "@/components/admin/DeleteConfirmDialog";
-import { AdminFilters } from "@/components/admin/AdminFilters";
-import { AdminCharts } from "@/components/admin/AdminCharts";
-import { SortableTableHead } from "@/components/admin/SortableTableHead";
-import { BulkActions } from "@/components/admin/BulkActions";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+
+const AdminStats = lazy(() => import("@/components/admin/AdminStats").then(m => ({ default: m.AdminStats })));
+const AdminHeader = lazy(() => import("@/components/admin/AdminHeader").then(m => ({ default: m.AdminHeader })));
+const EmptyState = lazy(() => import("@/components/admin/EmptyState").then(m => ({ default: m.EmptyState })));
+const UserDetailDialog = lazy(() => import("@/components/admin/UserDetailDialog").then(m => ({ default: m.UserDetailDialog })));
+const EditUserDialog = lazy(() => import("@/components/admin/EditUserDialog").then(m => ({ default: m.EditUserDialog })));
+const EditBillDialog = lazy(() => import("@/components/admin/EditBillDialog").then(m => ({ default: m.EditBillDialog })));
+const EditVehicleDialog = lazy(() => import("@/components/admin/EditVehicleDialog").then(m => ({ default: m.EditVehicleDialog })));
+const EditSubscriptionDialog = lazy(() => import("@/components/admin/EditSubscriptionDialog").then(m => ({ default: m.EditSubscriptionDialog })));
+const EditPaymentPlanDialog = lazy(() => import("@/components/admin/EditPaymentPlanDialog").then(m => ({ default: m.EditPaymentPlanDialog })));
+const EditBankAccountDialog = lazy(() => import("@/components/admin/EditBankAccountDialog").then(m => ({ default: m.EditBankAccountDialog })));
+const DeleteConfirmDialog = lazy(() => import("@/components/admin/DeleteConfirmDialog").then(m => ({ default: m.DeleteConfirmDialog })));
+const AdminFilters = lazy(() => import("@/components/admin/AdminFilters").then(m => ({ default: m.AdminFilters })));
+const AdminCharts = lazy(() => import("@/components/admin/AdminCharts").then(m => ({ default: m.AdminCharts })));
+const SortableTableHead = lazy(() => import("@/components/admin/SortableTableHead").then(m => ({ default: m.SortableTableHead })));
+const BulkActions = lazy(() => import("@/components/admin/BulkActions").then(m => ({ default: m.BulkActions })));
 
 interface Profile {
   id: string;
@@ -165,6 +167,16 @@ const STATUS_OPTIONS = {
   ]
 };
 
+const tabConfig = [
+  { id: 'users', label: 'Users', icon: Users },
+  { id: 'bills', label: 'Bills', icon: FileText },
+  { id: 'vehicles', label: 'Vehicles', icon: Car },
+  { id: 'subscriptions', label: 'Subscriptions', icon: CreditCard },
+  { id: 'paymentPlans', label: 'Payment Plans', icon: Calendar },
+  { id: 'bankAccounts', label: 'Bank Accounts', icon: Landmark },
+  { id: 'referrals', label: 'Referrals', icon: Gift },
+];
+
 const Admin = () => {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [bills, setBills] = useState<Bill[]>([]);
@@ -186,22 +198,18 @@ const Admin = () => {
     totalVehicles: 0, verifiedVehicles: 0, pendingBills: 0, paidBills: 0
   });
 
-  // Filter states
   const [activeTab, setActiveTab] = useState("users");
   const [statusFilter, setStatusFilter] = useState("all");
   const [dateFrom, setDateFrom] = useState<Date | undefined>();
   const [dateTo, setDateTo] = useState<Date | undefined>();
 
-  // Sort states
   const [sortConfig, setSortConfig] = useState<Record<string, SortConfig>>({});
 
-  // Selection states
   const [selectedItems, setSelectedItems] = useState<Record<string, Set<string>>>({
     users: new Set(), bills: new Set(), vehicles: new Set(), subscriptions: new Set(),
     paymentPlans: new Set(), bankAccounts: new Set(), referrals: new Set()
   });
 
-  // Dialog states
   const [selectedUser, setSelectedUser] = useState<Profile | null>(null);
   const [userDetailOpen, setUserDetailOpen] = useState(false);
   const [editUserOpen, setEditUserOpen] = useState(false);
@@ -221,7 +229,6 @@ const Admin = () => {
   const [selectedBankAccount, setSelectedBankAccount] = useState<BankAccount | null>(null);
   const [editBankAccountOpen, setEditBankAccountOpen] = useState(false);
 
-  // Delete states
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteType, setDeleteType] = useState<DeleteType | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -281,7 +288,6 @@ const Admin = () => {
     }
   };
 
-  // Chart data
   const subscriptionTiers = useMemo(() => {
     const counts: Record<string, number> = {};
     subscriptions.forEach(s => { counts[s.tier] = (counts[s.tier] || 0) + 1; });
@@ -311,7 +317,6 @@ const Admin = () => {
     return Object.entries(months).map(([month, data]) => ({ month, ...data })).slice(-6);
   }, [profiles, bills]);
 
-  // Sorting
   const handleSort = (tab: string, column: string) => {
     setSortConfig(prev => ({
       ...prev,
@@ -334,7 +339,6 @@ const Admin = () => {
     });
   };
 
-  // Selection
   const toggleSelection = (tab: string, id: string) => {
     setSelectedItems(prev => {
       const newSet = new Set(prev[tab]);
@@ -350,7 +354,6 @@ const Admin = () => {
     }));
   };
 
-  // Update handlers
   const handleUserUpdate = (updatedUser: Profile) => {
     setProfiles(prev => prev.map(p => p.user_id === updatedUser.user_id ? updatedUser : p));
   };
@@ -375,7 +378,6 @@ const Admin = () => {
     setBankAccounts(prev => prev.map(a => a.id === updatedAccount.id ? updatedAccount : a));
   };
 
-  // Delete handlers
   const openDeleteDialog = (type: DeleteType, id: string) => {
     setDeleteType(type);
     setDeleteId(id);
@@ -432,7 +434,6 @@ const Admin = () => {
     }
   };
 
-  // Filter helpers
   const applyDateFilter = <T extends { created_at: string }>(items: T[]): T[] => {
     return items.filter(item => {
       const date = new Date(item.created_at);
@@ -448,7 +449,6 @@ const Admin = () => {
     setDateTo(undefined);
   };
 
-  // Filtered data
   const filteredProfiles = useMemo(() => {
     let data = profiles.filter(profile => 
       profile.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -542,30 +542,112 @@ const Admin = () => {
     return optionsMap[activeTab] || [];
   };
 
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    setStatusFilter('all');
+  };
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+  };
+
+  const handleToggleCharts = () => {
+    setShowCharts(!showCharts);
+  };
+
+  const handleRefresh = () => {
+    fetchAdminData(true);
+  };
+
+  const handleViewUserDetails = (profile: Profile) => {
+    setSelectedUser(profile);
+    setUserDetailOpen(true);
+  };
+
+  const handleEditUser = (profile: Profile) => {
+    setSelectedUser(profile);
+    setEditUserOpen(true);
+  };
+
+  const handleEditBill = (bill: Bill) => {
+    setSelectedBill(bill);
+    setEditBillOpen(true);
+  };
+
+  const handleEditVehicle = (vehicle: Vehicle) => {
+    setSelectedVehicle(vehicle);
+    setEditVehicleOpen(true);
+  };
+
+  const handleEditSubscription = (subscription: Subscription) => {
+    setSelectedSubscription(subscription);
+    setEditSubscriptionOpen(true);
+  };
+
+  const handleEditPaymentPlan = (plan: PaymentPlan) => {
+    setSelectedPaymentPlan(plan);
+    setEditPaymentPlanOpen(true);
+  };
+
+  const handleEditBankAccount = (account: BankAccount) => {
+    setSelectedBankAccount(account);
+    setEditBankAccountOpen(true);
+  };
+
+  const handleBulkVerifyVehicles = async () => {
+    const ids = Array.from(selectedItems.vehicles);
+    await supabase.from('vehicles').update({ is_verified: true } as any).in('id', ids);
+    toast.success(`${ids.length} vehicles verified`);
+    setSelectedItems(prev => ({ ...prev, vehicles: new Set() }));
+    fetchAdminData();
+  };
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="animate-spin rounded-full h-10 w-10 border-2 border-primary border-t-transparent"></div>
-          <p className="text-muted-foreground text-sm">Loading admin data...</p>
+      <div className="min-h-screen bg-background">
+        <div className="fixed inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
+          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-info/5 rounded-full blur-3xl" />
+        </div>
+
+        <div className="relative">
+          <div className="h-16 bg-card animate-pulse rounded-lg mb-8" />
+          
+          <div className="container mx-auto px-6 py-8 space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="h-32 bg-card animate-pulse rounded-xl" />
+              ))}
+            </div>
+            
+            <div className="h-14 bg-card animate-pulse rounded-xl" />
+            
+            <div className="space-y-4">
+              <div className="h-12 bg-card animate-pulse rounded-lg" />
+              <TableSkeleton rows={8} />
+            </div>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Background decoration */}
+      <div className="min-h-screen bg-background">
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-info/5 rounded-full blur-3xl" />
       </div>
 
       <div className="relative">
-        <AdminHeader />
+        <Suspense fallback={<div className="h-16 bg-card animate-pulse rounded-lg" />}>
+          <AdminHeader />
+        </Suspense>
 
         <div className="container mx-auto px-6 py-8 space-y-8">
-          <AdminStats stats={stats} />
+          <Suspense fallback={<div className="h-32 bg-card animate-pulse rounded-lg" />}>
+            <AdminStats stats={stats} />
+          </Suspense>
 
           {/* Action Bar */}
           <div className="flex flex-wrap items-center gap-3 p-4 rounded-2xl bg-gradient-to-r from-card/80 via-card/50 to-card/80 backdrop-blur-sm border border-border/20 shadow-lg">
@@ -574,14 +656,14 @@ const Admin = () => {
               <Input
                 placeholder="Search..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={handleSearchChange}
                 className="pl-11 h-11 bg-background/50 border-border/30 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
               />
             </div>
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setShowCharts(!showCharts)}
+              onClick={handleToggleCharts}
               className={`gap-2 h-11 px-4 rounded-xl border-border/30 transition-all ${showCharts ? 'bg-primary/10 text-primary border-primary/30' : 'hover:bg-muted/50'}`}
             >
               <BarChart3 className="h-4 w-4" />
@@ -590,7 +672,7 @@ const Admin = () => {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => fetchAdminData(true)}
+              onClick={handleRefresh}
               disabled={refreshing}
               className="gap-2 h-11 px-4 rounded-xl border-border/30 hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-all"
             >
@@ -599,18 +681,19 @@ const Admin = () => {
             </Button>
           </div>
 
-          {/* Charts */}
           {showCharts && (
-            <AdminCharts
-              stats={stats}
-              subscriptionTiers={subscriptionTiers}
-              billCategories={billCategories}
-              monthlyTrend={monthlyTrend}
-            />
+            <Suspense fallback={<div className="h-96 bg-card animate-pulse rounded-lg" />}>
+              <AdminCharts
+                stats={stats}
+                subscriptionTiers={subscriptionTiers}
+                billCategories={billCategories}
+                monthlyTrend={monthlyTrend}
+              />
+            </Suspense>
           )}
 
-          {/* Filters */}
-          <AdminFilters
+          <Suspense fallback={<div className="h-20 bg-card animate-pulse rounded-lg" />}>
+            <AdminFilters
             statusFilter={statusFilter}
             onStatusFilterChange={setStatusFilter}
             statusOptions={getCurrentStatusOptions()}
@@ -620,42 +703,35 @@ const Admin = () => {
             onDateToChange={setDateTo}
             onClearFilters={clearFilters}
           />
+          </Suspense>
 
-          {/* Tabs */}
-          <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v); setStatusFilter('all'); }} className="space-y-6">
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
             <TabsList className="flex flex-wrap h-auto gap-1.5 bg-card/50 backdrop-blur-sm p-2 rounded-2xl border border-border/20 shadow-lg">
-              <TabsTrigger value="users" className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all">
-                <Users className="h-4 w-4 mr-2" />Users
-              </TabsTrigger>
-              <TabsTrigger value="bills" className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all">
-                <FileText className="h-4 w-4 mr-2" />Bills
-              </TabsTrigger>
-              <TabsTrigger value="vehicles" className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all">
-                <Car className="h-4 w-4 mr-2" />Vehicles
-              </TabsTrigger>
-              <TabsTrigger value="subscriptions" className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all">
-                <CreditCard className="h-4 w-4 mr-2" />Subscriptions
-              </TabsTrigger>
-              <TabsTrigger value="paymentPlans" className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all">
-                <Calendar className="h-4 w-4 mr-2" />Payment Plans
-              </TabsTrigger>
-              <TabsTrigger value="bankAccounts" className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all">
-                <Landmark className="h-4 w-4 mr-2" />Bank Accounts
-              </TabsTrigger>
-              <TabsTrigger value="referrals" className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all">
-                <Gift className="h-4 w-4 mr-2" />Referrals
-              </TabsTrigger>
+              {tabConfig.map((tab) => {
+                const Icon = tab.icon;
+                return (
+                  <TabsTrigger
+                    key={tab.id}
+                    value={tab.id}
+                    className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all"
+                  >
+                    <Icon className="h-4 w-4 mr-2" />
+                    {tab.label}
+                  </TabsTrigger>
+                );
+              })}
             </TabsList>
 
-          {/* Users Tab */}
           <TabsContent value="users">
-            <BulkActions
-              selectedCount={selectedItems.users.size}
-              totalCount={filteredProfiles.length}
-              onSelectAll={(checked) => toggleSelectAll('users', filteredProfiles.map(p => ({ id: p.user_id })), checked)}
-              allSelected={filteredProfiles.length > 0 && selectedItems.users.size === filteredProfiles.length}
-              onBulkDelete={() => setBulkDeleteDialogOpen(true)}
-            />
+            <Suspense fallback={<div className="h-12 bg-card animate-pulse rounded-lg mb-4" />}>
+              <BulkActions
+                selectedCount={selectedItems.users.size}
+                totalCount={filteredProfiles.length}
+                onSelectAll={(checked) => toggleSelectAll('users', filteredProfiles.map(p => ({ id: p.user_id })), checked)}
+                allSelected={filteredProfiles.length > 0 && selectedItems.users.size === filteredProfiles.length}
+                onBulkDelete={() => setBulkDeleteDialogOpen(true)}
+              />
+            </Suspense>
             <AdminTableWrapper
               title="User Management" description="View and manage all registered users"
               icon={<Users className="h-5 w-5" />} data={profiles} exportFilename="users"
@@ -665,10 +741,16 @@ const Admin = () => {
                 <TableHeader>
                   <TableRow className="border-border/50 hover:bg-transparent">
                     <TableHead className="w-10"><Checkbox /></TableHead>
-                    <SortableTableHead column="first_name" label="Name" currentSort={sortConfig.users} onSort={(col) => handleSort('users', col)} />
-                    <SortableTableHead column="email" label="Email" currentSort={sortConfig.users} onSort={(col) => handleSort('users', col)} />
+                    <Suspense fallback={<TableHead>Name</TableHead>}>
+                      <SortableTableHead column="first_name" label="Name" currentSort={sortConfig.users} onSort={(col) => handleSort('users', col)} />
+                    </Suspense>
+                    <Suspense fallback={<TableHead>Email</TableHead>}>
+                      <SortableTableHead column="email" label="Email" currentSort={sortConfig.users} onSort={(col) => handleSort('users', col)} />
+                    </Suspense>
                     <TableHead className="text-muted-foreground">Status</TableHead>
-                    <SortableTableHead column="created_at" label="Joined" currentSort={sortConfig.users} onSort={(col) => handleSort('users', col)} />
+                    <Suspense fallback={<TableHead>Joined</TableHead>}>
+                      <SortableTableHead column="created_at" label="Joined" currentSort={sortConfig.users} onSort={(col) => handleSort('users', col)} />
+                    </Suspense>
                     <TableHead className="text-muted-foreground text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -700,10 +782,10 @@ const Admin = () => {
                             <Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-40">
-                            <DropdownMenuItem onClick={() => { setSelectedUser(profile); setUserDetailOpen(true); }}>
+                            <DropdownMenuItem onClick={() => handleViewUserDetails(profile)}>
                               <Eye className="h-4 w-4 mr-2" />View Details
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => { setSelectedUser(profile); setEditUserOpen(true); }}>
+                            <DropdownMenuItem onClick={() => handleEditUser(profile)}>
                               <Pencil className="h-4 w-4 mr-2" />Edit
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => openDeleteDialog('user', profile.user_id)} className="text-destructive focus:text-destructive">
@@ -714,21 +796,26 @@ const Admin = () => {
                       </TableCell>
                     </TableRow>
                   ))}
-                  {filteredProfiles.length === 0 && <EmptyState colSpan={6} message="No users found" />}
+                  {filteredProfiles.length === 0 && (
+                    <Suspense fallback={<TableRow><TableCell colSpan={6} className="text-center">Loading...</TableCell></TableRow>}>
+                      <EmptyState colSpan={6} message="No users found" />
+                    </Suspense>
+                  )}
                 </TableBody>
               </Table>
             </AdminTableWrapper>
           </TabsContent>
 
-          {/* Bills Tab */}
           <TabsContent value="bills">
-            <BulkActions
-              selectedCount={selectedItems.bills.size}
-              totalCount={filteredBills.length}
-              onSelectAll={(checked) => toggleSelectAll('bills', filteredBills, checked)}
-              allSelected={filteredBills.length > 0 && selectedItems.bills.size === filteredBills.length}
-              onBulkDelete={() => setBulkDeleteDialogOpen(true)}
-            />
+            <Suspense fallback={<div className="h-12 bg-card animate-pulse rounded-lg mb-4" />}>
+              <BulkActions
+                selectedCount={selectedItems.bills.size}
+                totalCount={filteredBills.length}
+                onSelectAll={(checked) => toggleSelectAll('bills', filteredBills, checked)}
+                allSelected={filteredBills.length > 0 && selectedItems.bills.size === filteredBills.length}
+                onBulkDelete={() => setBulkDeleteDialogOpen(true)}
+              />
+            </Suspense>
             <AdminTableWrapper
               title="Bill Management" description="View and manage all bills"
               icon={<FileText className="h-5 w-5" />} data={bills} exportFilename="bills"
@@ -766,7 +853,7 @@ const Admin = () => {
                             <Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-40">
-                            <DropdownMenuItem onClick={() => { setSelectedBill(bill); setEditBillOpen(true); }}>
+                            <DropdownMenuItem onClick={() => handleEditBill(bill)}>
                               <Pencil className="h-4 w-4 mr-2" />Edit
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => openDeleteDialog('bill', bill.id)} className="text-destructive focus:text-destructive">
@@ -777,29 +864,28 @@ const Admin = () => {
                       </TableCell>
                     </TableRow>
                   ))}
-                  {filteredBills.length === 0 && <EmptyState colSpan={7} message="No bills found" />}
+                  {filteredBills.length === 0 && (
+                    <Suspense fallback={<TableRow><TableCell colSpan={7} className="text-center">Loading...</TableCell></TableRow>}>
+                      <EmptyState colSpan={7} message="No bills found" />
+                    </Suspense>
+                  )}
                 </TableBody>
               </Table>
             </AdminTableWrapper>
           </TabsContent>
 
-          {/* Vehicles Tab */}
           <TabsContent value="vehicles">
-            <BulkActions
-              selectedCount={selectedItems.vehicles.size}
-              totalCount={filteredVehicles.length}
-              onSelectAll={(checked) => toggleSelectAll('vehicles', filteredVehicles, checked)}
-              allSelected={filteredVehicles.length > 0 && selectedItems.vehicles.size === filteredVehicles.length}
-              onBulkDelete={() => setBulkDeleteDialogOpen(true)}
-              showVerifyActions
-              onBulkVerify={async () => {
-                const ids = Array.from(selectedItems.vehicles);
-                await supabase.from('vehicles').update({ is_verified: true } as any).in('id', ids);
-                toast.success(`${ids.length} vehicles verified`);
-                setSelectedItems(prev => ({ ...prev, vehicles: new Set() }));
-                fetchAdminData();
-              }}
-            />
+            <Suspense fallback={<div className="h-12 bg-card animate-pulse rounded-lg mb-4" />}>
+              <BulkActions
+                selectedCount={selectedItems.vehicles.size}
+                totalCount={filteredVehicles.length}
+                onSelectAll={(checked) => toggleSelectAll('vehicles', filteredVehicles, checked)}
+                allSelected={filteredVehicles.length > 0 && selectedItems.vehicles.size === filteredVehicles.length}
+                onBulkDelete={() => setBulkDeleteDialogOpen(true)}
+                showVerifyActions
+                onBulkVerify={handleBulkVerifyVehicles}
+              />
+            </Suspense>
             <AdminTableWrapper
               title="Vehicle Management" description="View and manage all vehicles"
               icon={<Car className="h-5 w-5" />} data={vehicles} exportFilename="vehicles"
@@ -848,7 +934,7 @@ const Admin = () => {
                             <Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-40">
-                            <DropdownMenuItem onClick={() => { setSelectedVehicle(vehicle); setEditVehicleOpen(true); }}>
+                            <DropdownMenuItem onClick={() => handleEditVehicle(vehicle)}>
                               <Pencil className="h-4 w-4 mr-2" />Edit
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => openDeleteDialog('vehicle', vehicle.id)} className="text-destructive focus:text-destructive">
@@ -859,21 +945,26 @@ const Admin = () => {
                       </TableCell>
                     </TableRow>
                   ))}
-                  {filteredVehicles.length === 0 && <EmptyState colSpan={7} message="No vehicles found" />}
+                  {filteredVehicles.length === 0 && (
+                    <Suspense fallback={<TableRow><TableCell colSpan={7} className="text-center">Loading...</TableCell></TableRow>}>
+                      <EmptyState colSpan={7} message="No vehicles found" />
+                    </Suspense>
+                  )}
                 </TableBody>
               </Table>
             </AdminTableWrapper>
           </TabsContent>
 
-          {/* Subscriptions Tab */}
           <TabsContent value="subscriptions">
-            <BulkActions
-              selectedCount={selectedItems.subscriptions.size}
-              totalCount={filteredSubscriptions.length}
-              onSelectAll={(checked) => toggleSelectAll('subscriptions', filteredSubscriptions, checked)}
-              allSelected={filteredSubscriptions.length > 0 && selectedItems.subscriptions.size === filteredSubscriptions.length}
-              onBulkDelete={() => setBulkDeleteDialogOpen(true)}
-            />
+            <Suspense fallback={<div className="h-12 bg-card animate-pulse rounded-lg mb-4" />}>
+              <BulkActions
+                selectedCount={selectedItems.subscriptions.size}
+                totalCount={filteredSubscriptions.length}
+                onSelectAll={(checked) => toggleSelectAll('subscriptions', filteredSubscriptions, checked)}
+                allSelected={filteredSubscriptions.length > 0 && selectedItems.subscriptions.size === filteredSubscriptions.length}
+                onBulkDelete={() => setBulkDeleteDialogOpen(true)}
+              />
+            </Suspense>
             <AdminTableWrapper
               title="Subscriptions" description="View all subscription plans"
               icon={<CreditCard className="h-5 w-5" />} data={subscriptions} exportFilename="subscriptions"
@@ -915,7 +1006,7 @@ const Admin = () => {
                             <Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-40">
-                            <DropdownMenuItem onClick={() => { setSelectedSubscription(sub); setEditSubscriptionOpen(true); }}>
+                            <DropdownMenuItem onClick={() => handleEditSubscription(sub)}>
                               <Pencil className="h-4 w-4 mr-2" />Edit
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => openDeleteDialog('subscription', sub.id)} className="text-destructive focus:text-destructive">
@@ -926,21 +1017,26 @@ const Admin = () => {
                       </TableCell>
                     </TableRow>
                   ))}
-                  {filteredSubscriptions.length === 0 && <EmptyState colSpan={7} message="No subscriptions found" />}
+                  {filteredSubscriptions.length === 0 && (
+                    <Suspense fallback={<TableRow><TableCell colSpan={7} className="text-center">Loading...</TableCell></TableRow>}>
+                      <EmptyState colSpan={7} message="No subscriptions found" />
+                    </Suspense>
+                  )}
                 </TableBody>
               </Table>
             </AdminTableWrapper>
           </TabsContent>
 
-          {/* Payment Plans Tab */}
           <TabsContent value="paymentPlans">
-            <BulkActions
+            <Suspense fallback={<div className="h-12 bg-card animate-pulse rounded-lg mb-4" />}>
+              <BulkActions
               selectedCount={selectedItems.paymentPlans.size}
               totalCount={filteredPaymentPlans.length}
               onSelectAll={(checked) => toggleSelectAll('paymentPlans', filteredPaymentPlans, checked)}
               allSelected={filteredPaymentPlans.length > 0 && selectedItems.paymentPlans.size === filteredPaymentPlans.length}
               onBulkDelete={() => setBulkDeleteDialogOpen(true)}
-            />
+              />
+            </Suspense>
             <AdminTableWrapper
               title="Payment Plans" description="View all payment plans"
               icon={<Calendar className="h-5 w-5" />} data={paymentPlans} exportFilename="payment-plans"
@@ -987,7 +1083,7 @@ const Admin = () => {
                             <Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-40">
-                            <DropdownMenuItem onClick={() => { setSelectedPaymentPlan(plan); setEditPaymentPlanOpen(true); }}>
+                            <DropdownMenuItem onClick={() => handleEditPaymentPlan(plan)}>
                               <Pencil className="h-4 w-4 mr-2" />Edit
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => openDeleteDialog('paymentPlan', plan.id)} className="text-destructive focus:text-destructive">
@@ -998,21 +1094,26 @@ const Admin = () => {
                       </TableCell>
                     </TableRow>
                   ))}
-                  {filteredPaymentPlans.length === 0 && <EmptyState colSpan={7} message="No payment plans found" />}
+                  {filteredPaymentPlans.length === 0 && (
+                    <Suspense fallback={<TableRow><TableCell colSpan={7} className="text-center">Loading...</TableCell></TableRow>}>
+                      <EmptyState colSpan={7} message="No payment plans found" />
+                    </Suspense>
+                  )}
                 </TableBody>
               </Table>
             </AdminTableWrapper>
           </TabsContent>
 
-          {/* Bank Accounts Tab */}
           <TabsContent value="bankAccounts">
-            <BulkActions
+            <Suspense fallback={<div className="h-12 bg-card animate-pulse rounded-lg mb-4" />}>
+              <BulkActions
               selectedCount={selectedItems.bankAccounts.size}
               totalCount={filteredBankAccounts.length}
               onSelectAll={(checked) => toggleSelectAll('bankAccounts', filteredBankAccounts, checked)}
               allSelected={filteredBankAccounts.length > 0 && selectedItems.bankAccounts.size === filteredBankAccounts.length}
               onBulkDelete={() => setBulkDeleteDialogOpen(true)}
-            />
+              />
+            </Suspense>
             <AdminTableWrapper
               title="Bank Accounts" description="View all linked bank accounts"
               icon={<Landmark className="h-5 w-5" />} data={bankAccounts} exportFilename="bank-accounts"
@@ -1054,7 +1155,7 @@ const Admin = () => {
                             <Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-40">
-                            <DropdownMenuItem onClick={() => { setSelectedBankAccount(account); setEditBankAccountOpen(true); }}>
+                            <DropdownMenuItem onClick={() => handleEditBankAccount(account)}>
                               <Pencil className="h-4 w-4 mr-2" />Edit
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => openDeleteDialog('bankAccount', account.id)} className="text-destructive focus:text-destructive">
@@ -1065,21 +1166,26 @@ const Admin = () => {
                       </TableCell>
                     </TableRow>
                   ))}
-                  {filteredBankAccounts.length === 0 && <EmptyState colSpan={8} message="No bank accounts found" />}
+                  {filteredBankAccounts.length === 0 && (
+                    <Suspense fallback={<TableRow><TableCell colSpan={8} className="text-center">Loading...</TableCell></TableRow>}>
+                      <EmptyState colSpan={8} message="No bank accounts found" />
+                    </Suspense>
+                  )}
                 </TableBody>
               </Table>
             </AdminTableWrapper>
           </TabsContent>
 
-          {/* Referrals Tab */}
           <TabsContent value="referrals">
-            <BulkActions
+            <Suspense fallback={<div className="h-12 bg-card animate-pulse rounded-lg mb-4" />}>
+              <BulkActions
               selectedCount={selectedItems.referrals.size}
               totalCount={filteredReferrals.length}
               onSelectAll={(checked) => toggleSelectAll('referrals', filteredReferrals, checked)}
               allSelected={filteredReferrals.length > 0 && selectedItems.referrals.size === filteredReferrals.length}
               onBulkDelete={() => setBulkDeleteDialogOpen(true)}
-            />
+              />
+            </Suspense>
             <AdminTableWrapper
               title="Referrals" description="View all referral activity"
               icon={<Gift className="h-5 w-5" />} data={referrals} exportFilename="referrals"
@@ -1129,7 +1235,11 @@ const Admin = () => {
                       </TableCell>
                     </TableRow>
                   ))}
-                  {filteredReferrals.length === 0 && <EmptyState colSpan={8} message="No referrals found" />}
+                  {filteredReferrals.length === 0 && (
+                    <Suspense fallback={<TableRow><TableCell colSpan={8} className="text-center">Loading...</TableCell></TableRow>}>
+                      <EmptyState colSpan={8} message="No referrals found" />
+                    </Suspense>
+                  )}
                 </TableBody>
               </Table>
             </AdminTableWrapper>
@@ -1138,30 +1248,31 @@ const Admin = () => {
         </div>
       </div>
 
-      {/* Dialogs */}
-      <UserDetailDialog user={selectedUser} open={userDetailOpen} onOpenChange={setUserDetailOpen} />
-      <EditUserDialog user={selectedUser} open={editUserOpen} onOpenChange={setEditUserOpen} onUpdate={handleUserUpdate} />
-      <EditBillDialog bill={selectedBill} open={editBillOpen} onOpenChange={setEditBillOpen} onUpdate={handleBillUpdate} />
-      <EditVehicleDialog vehicle={selectedVehicle} open={editVehicleOpen} onOpenChange={setEditVehicleOpen} onUpdate={handleVehicleUpdate} />
-      <EditSubscriptionDialog subscription={selectedSubscription} open={editSubscriptionOpen} onOpenChange={setEditSubscriptionOpen} onUpdate={handleSubscriptionUpdate} />
-      <EditPaymentPlanDialog plan={selectedPaymentPlan} open={editPaymentPlanOpen} onOpenChange={setEditPaymentPlanOpen} onUpdate={handlePaymentPlanUpdate} />
-      <EditBankAccountDialog account={selectedBankAccount} open={editBankAccountOpen} onOpenChange={setEditBankAccountOpen} onUpdate={handleBankAccountUpdate} />
-      <DeleteConfirmDialog
-        open={deleteDialogOpen}
-        onOpenChange={setDeleteDialogOpen}
-        onConfirm={handleDelete}
-        title={`Delete ${deleteType || ''}`}
-        description={getDeleteDescription()}
-        loading={deleting}
-      />
-      <DeleteConfirmDialog
-        open={bulkDeleteDialogOpen}
-        onOpenChange={setBulkDeleteDialogOpen}
-        onConfirm={handleBulkDelete}
-        title={`Delete ${selectedItems[activeTab]?.size || 0} items`}
-        description={`This will permanently delete ${selectedItems[activeTab]?.size || 0} selected items. This action cannot be undone.`}
-        loading={deleting}
-      />
+      <Suspense fallback={null}>
+        <UserDetailDialog user={selectedUser} open={userDetailOpen} onOpenChange={setUserDetailOpen} />
+        <EditUserDialog user={selectedUser} open={editUserOpen} onOpenChange={setEditUserOpen} onUpdate={handleUserUpdate} />
+        <EditBillDialog bill={selectedBill} open={editBillOpen} onOpenChange={setEditBillOpen} onUpdate={handleBillUpdate} />
+        <EditVehicleDialog vehicle={selectedVehicle} open={editVehicleOpen} onOpenChange={setEditVehicleOpen} onUpdate={handleVehicleUpdate} />
+        <EditSubscriptionDialog subscription={selectedSubscription} open={editSubscriptionOpen} onOpenChange={setEditSubscriptionOpen} onUpdate={handleSubscriptionUpdate} />
+        <EditPaymentPlanDialog plan={selectedPaymentPlan} open={editPaymentPlanOpen} onOpenChange={setEditPaymentPlanOpen} onUpdate={handlePaymentPlanUpdate} />
+        <EditBankAccountDialog account={selectedBankAccount} open={editBankAccountOpen} onOpenChange={setEditBankAccountOpen} onUpdate={handleBankAccountUpdate} />
+        <DeleteConfirmDialog
+          open={deleteDialogOpen}
+          onOpenChange={setDeleteDialogOpen}
+          onConfirm={handleDelete}
+          title={`Delete ${deleteType || ''}`}
+          description={getDeleteDescription()}
+          loading={deleting}
+        />
+        <DeleteConfirmDialog
+          open={bulkDeleteDialogOpen}
+          onOpenChange={setBulkDeleteDialogOpen}
+          onConfirm={handleBulkDelete}
+          title={`Delete ${selectedItems[activeTab]?.size || 0} items`}
+          description={`This will permanently delete ${selectedItems[activeTab]?.size || 0} selected items. This action cannot be undone.`}
+          loading={deleting}
+        />
+      </Suspense>
     </div>
   );
 };

@@ -1,16 +1,17 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Building2, CheckCircle2, ArrowRight, Lock, Shield, AlertCircle, Loader2 } from "lucide-react";
-import { Header } from "@/components/layout/Header";
-import { Footer } from "@/components/layout/Footer";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { addDays } from "date-fns";
+
+const Header = lazy(() => import("@/components/layout/Header").then(m => ({ default: m.Header })));
+const Footer = lazy(() => import("@/components/layout/Footer").then(m => ({ default: m.Footer })));
 
 const banks = [
   { id: "chase", name: "Chase", logo: "🏦" },
@@ -143,7 +144,9 @@ export default function ConnectBankPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <Header />
+      <Suspense fallback={<div className="h-16 bg-card animate-pulse" />}>
+        <Header />
+      </Suspense>
       
       <main className="flex-1 py-12 md:py-20">
         <div className="container px-4 max-w-2xl mx-auto">
@@ -384,7 +387,9 @@ export default function ConnectBankPage() {
         </div>
       </main>
       
-      <Footer />
+      <Suspense fallback={<div className="h-32 bg-card animate-pulse" />}>
+        <Footer />
+      </Suspense>
     </div>
   );
 }

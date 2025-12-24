@@ -1,4 +1,3 @@
--- Create a table for payment plans (repayment tracking for covered bills)
 CREATE TABLE public.payment_plans (
   id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID NOT NULL,

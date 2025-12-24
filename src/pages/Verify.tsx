@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -6,12 +6,13 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Car, CheckCircle2, Shield, ArrowRight, AlertCircle, Loader2,CircleCheckBig } from "lucide-react";
-import { Header } from "@/components/layout/Header";
-import { Footer } from "@/components/layout/Footer";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+
+const Header = lazy(() => import("@/components/layout/Header").then(m => ({ default: m.Header })));
+const Footer = lazy(() => import("@/components/layout/Footer").then(m => ({ default: m.Footer })));
 
 type Step = "intro" | "vin" | "ownership" | "insurance" | "complete";
 
@@ -132,7 +133,9 @@ export default function VerifyPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <Header />
+      <Suspense fallback={<div className="h-16 bg-card animate-pulse" />}>
+        <Header />
+      </Suspense>
       
       <main className="flex-1 py-12 md:py-20">
         <div className="container px-4 sm:px-6 max-w-2xl mx-auto">
@@ -161,7 +164,7 @@ export default function VerifyPage() {
                     <div key={index} className="rounded-xl border border-border bg-card p-4 text-center">
                       <Icon className="h-6 w-6 text-accent mx-auto mb-2" />
                       <p className="text-sm font-medium text-foreground">{benefit.text}</p>
-                    </div>
+                </div>
                   );
                 })}
               </div>
@@ -436,7 +439,9 @@ export default function VerifyPage() {
         </div>
       </main>
       
-      <Footer />
+      <Suspense fallback={<div className="h-32 bg-card animate-pulse" />}>
+        <Footer />
+      </Suspense>
     </div>
   );
 }

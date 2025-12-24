@@ -1,7 +1,6 @@
 -- Create enum for user roles
 CREATE TYPE public.app_role AS ENUM ('admin', 'moderator', 'user');
 
--- Create user_roles table
 CREATE TABLE public.user_roles (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
