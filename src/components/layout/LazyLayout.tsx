@@ -1,23 +1,20 @@
-import { lazy, Suspense } from "react";
-import { Hero } from "@/components/landing/Hero";
-import { Features } from "@/components/landing/Features";
-import { HowItWorks } from "@/components/landing/HowItWorks";
-import { CTA } from "@/components/landing/CTA";
+import { lazy, Suspense, ReactNode } from "react";
 
 const Header = lazy(() => import("@/components/layout/Header").then(m => ({ default: m.Header })));
 const Footer = lazy(() => import("@/components/layout/Footer").then(m => ({ default: m.Footer })));
 
-export default function Index() {
+interface LazyLayoutProps {
+  children: ReactNode;
+}
+
+export function LazyLayout({ children }: LazyLayoutProps) {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Suspense fallback={<div className="h-16 bg-card animate-pulse" />}>
         <Header />
       </Suspense>
       <main className="flex-1">
-        <Hero />
-        <Features />
-        <HowItWorks />
-        <CTA />
+        {children}
       </main>
       <Suspense fallback={<div className="h-32 bg-card animate-pulse" />}>
         <Footer />
@@ -25,3 +22,4 @@ export default function Index() {
     </div>
   );
 }
+

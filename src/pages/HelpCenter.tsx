@@ -83,6 +83,10 @@ export default function HelpCenterPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
+  const handleCategoryClick = (categoryLabel: string) => {
+    setSelectedCategory(selectedCategory === categoryLabel ? null : categoryLabel);
+  };
+
   const filteredFaqs = faqData.filter(section => 
     !selectedCategory || section.category === selectedCategory
   ).map(section => ({
@@ -99,7 +103,6 @@ export default function HelpCenterPage() {
       <Header />
       
       <main className="flex-1">
-        {/* Hero */}
         <section className="py-16 md:py-24 bg-secondary/30">
           <div className="container px-4">
             <div className="mx-auto max-w-2xl text-center">
@@ -120,7 +123,6 @@ export default function HelpCenterPage() {
           </div>
         </section>
         
-        {/* Categories */}
         <section className="py-16">
           <div className="container px-4">
             <h2 className="text-xl font-bold text-foreground mb-6">Browse by Category</h2>
@@ -130,7 +132,7 @@ export default function HelpCenterPage() {
                   key={category.label}
                   className={`hover:border-accent/30 transition-all cursor-pointer animate-fade-in opacity-0 ${selectedCategory === category.label ? 'border-accent bg-accent/5' : ''}`}
                   style={{ animationDelay: `${index * 50}ms` }}
-                  onClick={() => setSelectedCategory(selectedCategory === category.label ? null : category.label)}
+                  onClick={() => handleCategoryClick(category.label)}
                 >
                   <CardContent className="flex flex-col items-center justify-center p-6 text-center">
                     <div className={`mb-3 flex h-12 w-12 items-center justify-center rounded-xl ${selectedCategory === category.label ? 'bg-accent text-accent-foreground' : 'bg-accent/10 text-accent'}`}>
@@ -145,7 +147,6 @@ export default function HelpCenterPage() {
           </div>
         </section>
         
-        {/* FAQ Accordion */}
         <section className="py-16 bg-secondary/30">
           <div className="container px-4">
             <div className="mx-auto max-w-3xl">

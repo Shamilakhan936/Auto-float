@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useEffect, useState, Suspense } from "react";
+import { useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
@@ -56,84 +56,45 @@ export default function DashboardPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Fetch subscription
-      const { data: subData, error: subError } = await supabase
-        .from("subscriptions")
-        .select("*")
-        .eq("user_id", user!.id)
-        .maybeSingle();
-      
-      if (subError) throw subError;
-      if (subData) {
-        setSubscription(subData as Subscription);
-      }
+      const [
+        { data: subData, error: subError },
+        { data: billsData, error: billsError },
+        { data: vehicleData, error: vehicleError },
+        { data: bankData, error: bankError },
+        { data: plansData, error: plansError },
+        { data: installmentsData, error: installmentsError },
+        { data: profileData }
+      ] = await Promise.all([
+        supabase.from("subscriptions").select("*").eq("user_id", user!.id).maybeSingle(),
+        supabase.from("bills").select("*").eq("user_id", user!.id).order("due_date", { ascending: true }),
+        supabase.from("vehicles").select("*").eq("user_id", user!.id).maybeSingle(),
+        supabase.from("bank_accounts").select("*").eq("user_id", user!.id).eq("is_primary", true).maybeSingle(),
+        supabase.from("payment_plans").select("*").eq("user_id", user!.id).order("created_at", { ascending: false }),
+        supabase.from("payment_installments").select("*").eq("user_id", user!.id).order("due_date", { ascending: true }),
+        supabase.from("profiles").select("referral_code").eq("user_id", user!.id).maybeSingle()
+      ]);
 
-      // Fetch bills
-      const { data: billsData, error: billsError } = await supabase
-        .from("bills")
-        .select("*")
-        .eq("user_id", user!.id)
-        .order("due_date", { ascending: true });
-      
+      if (subError) throw subError;
+      if (subData) setSubscription(subData as Subscription);
+
       if (billsError) throw billsError;
       setBills((billsData as Bill[]) || []);
 
-      // Fetch vehicle
-      const { data: vehicleData, error: vehicleError } = await supabase
-        .from("vehicles")
-        .select("*")
-        .eq("user_id", user!.id)
-        .maybeSingle();
-      
       if (vehicleError && vehicleError.code !== "PGRST116") throw vehicleError;
-      if (vehicleData) {
-        setVehicle(vehicleData as Vehicle);
-      }
+      if (vehicleData) setVehicle(vehicleData as Vehicle);
 
-      // Fetch bank account
-      const { data: bankData, error: bankError } = await supabase
-        .from("bank_accounts")
-        .select("*")
-        .eq("user_id", user!.id)
-        .eq("is_primary", true)
-        .maybeSingle();
-      
       if (bankError && bankError.code !== "PGRST116") throw bankError;
-      if (bankData) {
-        setBankAccount(bankData as BankAccount);
-      }
+      if (bankData) setBankAccount(bankData as BankAccount);
 
-      // Fetch payment plans
-      const { data: plansData, error: plansError } = await supabase
-        .from("payment_plans")
-        .select("*")
-        .eq("user_id", user!.id)
-        .order("created_at", { ascending: false });
-      
       if (plansError) throw plansError;
       setPaymentPlans((plansData as PaymentPlan[]) || []);
 
-      // Fetch installments
-      const { data: installmentsData, error: installmentsError } = await supabase
-        .from("payment_installments")
-        .select("*")
-        .eq("user_id", user!.id)
-        .order("due_date", { ascending: true });
-      
       if (installmentsError) throw installmentsError;
       setInstallments((installmentsData as PaymentInstallment[]) || []);
 
-      // Fetch profile for referral code
-      const { data: profileData } = await supabase
-        .from("profiles")
-        .select("referral_code")
-        .eq("user_id", user!.id)
-        .maybeSingle();
-      
       if (profileData?.referral_code) {
         setReferralCode(profileData.referral_code);
       }
-
     } catch (error) {
       console.error("Error fetching data:", error);
       toast({
@@ -170,7 +131,6 @@ export default function DashboardPage() {
 
     setSubmitting(true);
     try {
-      // Insert bill
       const { data: billData, error: billError } = await supabase.from("bills").insert({
         user_id: user.id,
         name: data.name,
@@ -182,7 +142,6 @@ export default function DashboardPage() {
 
       if (billError) throw billError;
 
-      // Create payment plan for this bill (4 weekly installments)
       const installmentAmount = amount / 4;
       const { data: planData, error: planError } = await supabase.from("payment_plans").insert({
         user_id: user.id,
@@ -195,7 +154,6 @@ export default function DashboardPage() {
 
       if (planError) throw planError;
 
-      // Create 4 installments
       const installmentsToCreate = [];
       for (let i = 0; i < 4; i++) {
         installmentsToCreate.push({
@@ -210,7 +168,6 @@ export default function DashboardPage() {
       const { error: installmentsError } = await supabase.from("payment_installments").insert(installmentsToCreate);
       if (installmentsError) throw installmentsError;
 
-      // Update access used
       const { error: subError } = await supabase
         .from("subscriptions")
         .update({ access_used: subscription.access_used + amount })
@@ -237,15 +194,7 @@ export default function DashboardPage() {
     }
   };
 
-  if (authLoading || loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-accent" />
-      </div>
-    );
-  }
-
-  if (!user) {
+  if (!user && !authLoading) {
     return null;
   }
 
@@ -275,7 +224,6 @@ export default function DashboardPage() {
     setSubmitting(true);
 
     try {
-      // Update installment to paid
       const { error: installmentError } = await supabase
         .from("payment_installments")
         .update({ 
@@ -286,7 +234,6 @@ export default function DashboardPage() {
 
       if (installmentError) throw installmentError;
 
-      // Update payment plan
       const plan = paymentPlans.find(p => p.id === planId);
       if (plan) {
         const newAmountPaid = plan.amount_paid + amount;
@@ -323,9 +270,39 @@ export default function DashboardPage() {
     }
   };
 
+  const handleCopyReferralCode = () => {
+    const code = referralCode || `REF-${user?.id?.slice(0, 8).toUpperCase()}`;
+    navigator.clipboard.writeText(code);
+    toast({
+      title: "Copied!",
+      description: "Referral code copied to clipboard",
+    });
+  };
+
+  const handlePayNextInstallment = (installment: PaymentInstallment) => {
+    const plan = paymentPlans.find(p => 
+      installments.some(i => i.payment_plan_id === p.id && i.id === installment.id)
+    );
+    if (plan) {
+      handleMakePayment(installment.id, installment.amount, plan.id);
+    }
+  };
+
+  const handleQuickActionClick = (action: "addBill" | "bank" | "vehicle") => {
+    if (action === "addBill") {
+      setAddBillOpen(true);
+    } else if (action === "bank") {
+      setManageBankOpen(true);
+    } else if (action === "vehicle") {
+      setManageVehicleOpen(true);
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <Header />
+      <Suspense fallback={<div className="h-16 bg-card animate-pulse" />}>
+        <Header />
+      </Suspense>
       
       <main className="flex-1 py-8 md:py-12">
         <div className="container px-4">

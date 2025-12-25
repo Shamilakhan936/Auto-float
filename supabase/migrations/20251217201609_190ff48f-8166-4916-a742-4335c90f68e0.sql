@@ -12,7 +12,6 @@ FOR SELECT
 TO anon
 USING (true);
 
--- Allow public/anonymous read access to subscriptions for admin panel
 CREATE POLICY "Allow public read access to subscriptions" 
 ON public.subscriptions 
 FOR SELECT 

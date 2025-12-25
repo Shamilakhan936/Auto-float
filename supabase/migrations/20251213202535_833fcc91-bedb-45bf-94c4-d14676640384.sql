@@ -3,7 +3,6 @@ ALTER TABLE public.profiles
 ADD COLUMN IF NOT EXISTS referral_code TEXT UNIQUE,
 ADD COLUMN IF NOT EXISTS referred_by TEXT;
 
--- Create referrals table for tracking
 CREATE TABLE public.referrals (
   id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
   referrer_id UUID NOT NULL,

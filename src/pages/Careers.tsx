@@ -59,7 +59,6 @@ export default function CareersPage() {
       <Header />
       
       <main className="flex-1">
-        {/* Hero */}
         <section className="py-16 md:py-24">
           <div className="container px-4">
             <div className="mx-auto max-w-3xl text-center">
@@ -75,7 +74,6 @@ export default function CareersPage() {
           </div>
         </section>
         
-        {/* Benefits */}
         <section className="py-12 bg-secondary/30">
           <div className="container px-4">
             <div className="flex flex-wrap items-center justify-center gap-4">
@@ -88,7 +86,6 @@ export default function CareersPage() {
           </div>
         </section>
         
-        {/* Open Positions */}
         <section className="py-16 md:py-24">
           <div className="container px-4">
             <div className="mx-auto max-w-3xl">
@@ -101,10 +98,10 @@ export default function CareersPage() {
                     className="hover:border-accent/30 transition-all cursor-pointer animate-fade-in opacity-0"
                     style={{ animationDelay: `${index * 100}ms` }}
                   >
-                    <CardContent className="flex items-center justify-between p-6">
-                      <div>
+                    <CardContent className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-6">
+                      <div className="flex-1">
                         <h3 className="font-semibold text-foreground mb-1">{position.title}</h3>
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-sm text-muted-foreground">
                           <span>{position.department}</span>
                           <span className="flex items-center gap-1">
                             <MapPin className="h-3 w-3" />
@@ -113,7 +110,7 @@ export default function CareersPage() {
                           <Badge variant="secondary">{position.type}</Badge>
                         </div>
                       </div>
-                      <Button variant="ghost" size="sm">
+                      <Button variant="ghost" size="sm" className="w-full sm:w-auto sm:flex-shrink-0">
                         Apply
                         <ArrowRight className="h-4 w-4 ml-2" />
                       </Button>

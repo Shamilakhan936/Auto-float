@@ -105,25 +105,20 @@ export default function AuthPage() {
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   
-  // Signup flow state
   const [signupStep, setSignupStep] = useState<SignupStep>("account");
   const [userId, setUserId] = useState<string | null>(null);
   
-  // Plan selection
   const [selectedPlan, setSelectedPlan] = useState<"basic" | "plus" | "auto_plus">("plus");
   
-  // Vehicle verification
   const [vin, setVin] = useState("");
   const [licensePlate, setLicensePlate] = useState("");
   const [verificationMethod, setVerificationMethod] = useState<"vin" | "plate" | null>(null);
   const [insuranceProvider, setInsuranceProvider] = useState("");
   const [policyNumber, setPolicyNumber] = useState("");
   
-  // Bank connection
   const [selectedBank, setSelectedBank] = useState<string | null>(null);
   const [settlementTiming, setSettlementTiming] = useState<"payday" | "month-end" | null>(null);
   
-  // Identity verification
   const [fullName, setFullName] = useState("");
   const [address, setAddress] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -133,14 +128,12 @@ export default function AuthPage() {
   const [carInsuranceFile, setCarInsuranceFile] = useState<File | null>(null);
   const [uploadingDocs, setUploadingDocs] = useState(false);
 
-  // Bills upload
   const [bills, setBills] = useState<Array<{ name: string; amount: string; category: string; dueDate: string }>>([]);
   const [newBillName, setNewBillName] = useState("");
   const [newBillAmount, setNewBillAmount] = useState("");
   const [newBillCategory, setNewBillCategory] = useState("");
   const [newBillDueDate, setNewBillDueDate] = useState("");
 
-  // Credit card payment
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [cardNumber, setCardNumber] = useState("");
   const [cardExpiry, setCardExpiry] = useState("");
@@ -269,7 +262,6 @@ export default function AuthPage() {
     setUploadingDocs(true);
     
     try {
-      // Upload driver's license
       const dlPath = `${userId}/drivers-license-${Date.now()}`;
       const { error: dlError } = await supabase.storage
         .from("user-documents")
@@ -277,7 +269,6 @@ export default function AuthPage() {
       
       if (dlError) throw dlError;
       
-      // Upload paystub
       const psPath = `${userId}/paystub-${Date.now()}`;
       const { error: psError } = await supabase.storage
         .from("user-documents")
@@ -285,7 +276,6 @@ export default function AuthPage() {
       
       if (psError) throw psError;
 
-      // Upload car insurance
       const ciPath = `${userId}/car-insurance-${Date.now()}`;
       const { error: ciError } = await supabase.storage
         .from("user-documents")
@@ -293,7 +283,6 @@ export default function AuthPage() {
       
       if (ciError) throw ciError;
 
-      // Update profile with document paths
       const { error: profileError } = await supabase
         .from("profiles")
         .update({
@@ -359,7 +348,6 @@ export default function AuthPage() {
     setIsLoading(true);
 
     try {
-      // Only insert vehicle if user provided info
       if (verificationMethod && (vin || licensePlate)) {
         const { error: vehicleError } = await supabase.from("vehicles").insert({
           user_id: userId,
@@ -376,7 +364,6 @@ export default function AuthPage() {
 
         if (vehicleError) throw vehicleError;
 
-        // Update subscription to auto_plus with higher limit
         const { error: subError } = await supabase
           .from("subscriptions")
           .update({ 
@@ -416,7 +403,6 @@ export default function AuthPage() {
     setIsLoading(true);
 
     try {
-      // Only insert bank if user selected one
       if (selectedBank) {
         const bankName = banks.find(b => b.id === selectedBank)?.name || "Bank";
         
@@ -431,7 +417,6 @@ export default function AuthPage() {
         if (bankError) console.error("Bank insert error:", bankError);
       }
 
-      // Update subscription with settlement timing if selected
       if (settlementTiming) {
         const nextSettlement = addDays(new Date(), 30);
         const { error: subError } = await supabase
@@ -446,7 +431,6 @@ export default function AuthPage() {
         if (subError) console.error("Subscription update error:", subError);
       }
 
-      // Process payment
       await new Promise(resolve => setTimeout(resolve, 2000));
       
       toast({
@@ -496,7 +480,6 @@ export default function AuthPage() {
     setIsLoading(true);
 
     try {
-      // Save bills to database
       for (const bill of bills) {
         await supabase.from("bills").insert({
           user_id: userId,
@@ -534,7 +517,6 @@ export default function AuthPage() {
     setProcessingPayment(true);
 
     try {
-      // Simulate payment processing
       await new Promise(resolve => setTimeout(resolve, 2000));
 
       toast({

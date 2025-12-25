@@ -1,0 +1,37 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background gradient -->
+  <rect width="1200" height="630" fill="url(#gradient)"/>
+  <defs>
+    <linearGradient id="gradient" x1="0" y1="0" x2="1200" y2="630" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0A0A0A"/>
+      <stop offset="50%" stop-color="#0F0F0F"/>
+      <stop offset="100%" stop-color="#1A3A2E"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Decorative circles -->
+  <circle cx="200" cy="150" r="100" fill="#2DD4BF" opacity="0.1"/>
+  <circle cx="1000" cy="480" r="150" fill="#2DD4BF" opacity="0.1"/>
+  
+  <!-- Main content area -->
+  <g transform="translate(600, 315)">
+    <!-- Logo icon -->
+    <rect x="-80" y="-80" width="160" height="160" rx="24" fill="#2DD4BF"/>
+    <g transform="translate(0, -20)">
+      <!-- Car body -->
+      <path d="M-40 20C-40 19.4477 -39.5523 19 -39 19H-37.5C-37.2239 19 -37 18.7761 -37 18.5V17.5C-37 17.2239 -36.7761 17 -36.5 17H-27.5C-27.2239 17 -27 17.2239 -27 17.5V18.5C-27 18.7761 -26.7761 19 -26.5 19H-25C-24.4477 19 -24 19.4477 -24 20V22C-24 22.5523 -24.4477 23 -25 23H-26C-26.5523 23 -27 22.5523 -27 22V21H-37V22C-37 22.5523 -37.4477 23 -38 23H-39C-39.5523 23 -40 22.5523 -40 22V20Z" fill="#0A0A0A"/>
+      <!-- Car wheels -->
+      <circle cx="-33" cy="22" r="3" fill="#0A0A0A"/>
+      <circle cx="-23" cy="22" r="3" fill="#0A0A0A"/>
+      <!-- Car top -->
+      <path d="M-38 14L-36.5 12H-27.5L-26 14H-38Z" fill="#0A0A0A"/>
+    </g>
+    
+    <!-- Site name -->
+    <text x="0" y="120" font-family="system-ui, -apple-system, sans-serif" font-size="72" font-weight="700" fill="#FFFFFF" text-anchor="middle">AutoFloat</text>
+    
+    <!-- Tagline -->
+    <text x="0" y="180" font-family="system-ui, -apple-system, sans-serif" font-size="32" font-weight="400" fill="#94A3B8" text-anchor="middle">Predictable Bill Coverage Simplified</text>
+  </g>
+</svg>
+

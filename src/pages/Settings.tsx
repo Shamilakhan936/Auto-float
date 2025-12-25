@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
+import { PageSkeleton } from "@/components/ui/PageSkeleton";
 import {
   User,
   Mail,
@@ -33,12 +34,13 @@ import {
   DollarSign,
   Clock,
 } from "lucide-react";
-import { Header } from "@/components/layout/Header";
-import { Footer } from "@/components/layout/Footer";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+
+const Header = lazy(() => import("@/components/layout/Header").then(m => ({ default: m.Header })));
+const Footer = lazy(() => import("@/components/layout/Footer").then(m => ({ default: m.Footer })));
 
 interface Profile {
   first_name: string | null;
@@ -100,6 +102,25 @@ const tierPrices = {
   auto_plus: 75,
 };
 
+const insuranceProviders = [
+  "State Farm",
+  "Geico",
+  "Progressive",
+  "Allstate",
+  "USAA",
+  "Liberty Mutual",
+  "Other",
+];
+
+const bankNames = [
+  "Chase",
+  "Bank of America",
+  "Wells Fargo",
+  "Citibank",
+  "Capital One",
+  "Other Bank",
+];
+
 export default function SettingsPage() {
   const { user, loading: authLoading, signOut } = useAuth();
   const navigate = useNavigate();
@@ -112,7 +133,6 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  // Edit states
   const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [editFirstName, setEditFirstName] = useState("");
   const [editLastName, setEditLastName] = useState("");
@@ -144,49 +164,32 @@ export default function SettingsPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Fetch profile
-      const { data: profileData } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("user_id", user!.id)
-        .maybeSingle();
+      const [
+        { data: profileData },
+        { data: subData },
+        { data: vehicleData },
+        { data: bankData },
+        { data: referralData }
+      ] = await Promise.all([
+        supabase.from("profiles").select("*").eq("user_id", user!.id).maybeSingle(),
+        supabase.from("subscriptions").select("*").eq("user_id", user!.id).maybeSingle(),
+        supabase.from("vehicles").select("*").eq("user_id", user!.id),
+        supabase.from("bank_accounts").select("*").eq("user_id", user!.id),
+        supabase.from("referrals").select("*").eq("referrer_id", user!.id)
+      ]);
 
       if (profileData) setProfile(profileData as Profile);
-
-      // Fetch subscription
-      const { data: subData } = await supabase
-        .from("subscriptions")
-        .select("*")
-        .eq("user_id", user!.id)
-        .maybeSingle();
-
       if (subData) setSubscription(subData as Subscription);
-
-      // Fetch vehicles
-      const { data: vehicleData } = await supabase
-        .from("vehicles")
-        .select("*")
-        .eq("user_id", user!.id);
-
       if (vehicleData) setVehicles(vehicleData as Vehicle[]);
-
-      // Fetch bank accounts
-      const { data: bankData } = await supabase
-        .from("bank_accounts")
-        .select("*")
-        .eq("user_id", user!.id);
-
       if (bankData) setBankAccounts(bankData as BankAccount[]);
-
-      // Fetch referrals
-      const { data: referralData } = await supabase
-        .from("referrals")
-        .select("*")
-        .eq("referrer_id", user!.id);
-
       if (referralData) setReferrals(referralData as Referral[]);
     } catch (error) {
       console.error("Error fetching data:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load settings data.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -331,7 +334,6 @@ export default function SettingsPage() {
     setSaving(true);
 
     try {
-      // Set all existing banks to non-primary
       await supabase
         .from("bank_accounts")
         .update({ is_primary: false })
@@ -366,13 +368,11 @@ export default function SettingsPage() {
     if (!user) return;
 
     try {
-      // Set all to non-primary first
       await supabase
         .from("bank_accounts")
         .update({ is_primary: false })
         .eq("user_id", user.id);
 
-      // Set selected as primary
       const { error } = await supabase
         .from("bank_accounts")
         .update({ is_primary: true })
@@ -419,36 +419,42 @@ export default function SettingsPage() {
     navigate("/");
   };
 
+  const handleEditProfileClick = () => {
+    setEditFirstName(profile?.first_name || "");
+    setEditLastName(profile?.last_name || "");
+    setEditProfileOpen(true);
+  };
+
   const copyReferralCode = () => {
     const code = profile?.referral_code || `REF-${user?.id?.slice(0, 8).toUpperCase()}`;
     navigator.clipboard.writeText(code);
     toast({ title: "Copied!", description: "Referral code copied to clipboard." });
   };
 
-  if (authLoading || loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-accent" />
-      </div>
-    );
+  if (!user && !authLoading) {
+    return null;
   }
 
-  if (!user) return null;
-
-  const referralCode = profile?.referral_code || `REF-${user.id.slice(0, 8).toUpperCase()}`;
+  const referralCode = profile?.referral_code || `REF-${user?.id?.slice(0, 8).toUpperCase()}`;
   const totalReferralEarnings = referrals.reduce((sum, r) => sum + (r.reward_paid ? r.reward_amount : 0), 0);
   const pendingReferralEarnings = referrals.reduce((sum, r) => sum + (!r.reward_paid ? r.reward_amount : 0), 0);
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <Header />
+      <Suspense fallback={<div className="h-16 bg-card animate-pulse" />}>
+        <Header />
+      </Suspense>
 
       <main className="flex-1 py-8 md:py-12">
         <div className="container px-4 max-w-4xl">
-          <div className="mb-8">
-            <h1 className="text-2xl md:text-3xl font-bold text-foreground">Settings</h1>
-            <p className="text-muted-foreground">Manage your account, vehicles, and payment settings.</p>
-          </div>
+          {loading ? (
+            <PageSkeleton />
+          ) : (
+            <>
+              <div className="mb-8">
+                <h1 className="text-2xl md:text-3xl font-bold text-foreground">Settings</h1>
+                <p className="text-muted-foreground">Manage your account, vehicles, and payment settings.</p>
+              </div>
 
           <Tabs defaultValue="profile" className="space-y-6">
             <TabsList className="grid grid-cols-5 w-full">
@@ -459,7 +465,6 @@ export default function SettingsPage() {
               <TabsTrigger value="referrals">Referrals</TabsTrigger>
             </TabsList>
 
-            {/* Profile Tab */}
             <TabsContent value="profile" className="space-y-6">
               <Card>
                 <CardHeader>
@@ -471,11 +476,7 @@ export default function SettingsPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => {
-                        setEditFirstName(profile?.first_name || "");
-                        setEditLastName(profile?.last_name || "");
-                        setEditProfileOpen(true);
-                      }}
+                      onClick={handleEditProfileClick}
                     >
                       <Edit2 className="h-4 w-4 mr-2" />
                       Edit
@@ -504,7 +505,6 @@ export default function SettingsPage() {
                 </CardContent>
               </Card>
 
-              {/* Document Verification */}
               <Card>
                 <CardHeader>
                   <CardTitle>Document Verification</CardTitle>
@@ -596,7 +596,6 @@ export default function SettingsPage() {
               </Card>
             </TabsContent>
 
-            {/* Subscription Tab */}
             <TabsContent value="subscription" className="space-y-6">
               <Card>
                 <CardHeader>
@@ -691,7 +690,6 @@ export default function SettingsPage() {
               </Card>
             </TabsContent>
 
-            {/* Vehicles Tab */}
             <TabsContent value="vehicles" className="space-y-6">
               <Card>
                 <CardHeader>
@@ -759,7 +757,6 @@ export default function SettingsPage() {
                             </div>
                           </div>
                           
-                          {/* Insurance Status */}
                           <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/30">
                             <div className="flex items-center gap-3">
                               <Shield className="h-5 w-5 text-muted-foreground" />
@@ -790,7 +787,6 @@ export default function SettingsPage() {
               </Card>
             </TabsContent>
 
-            {/* Banks Tab */}
             <TabsContent value="banks" className="space-y-6">
               <Card>
                 <CardHeader>
@@ -861,7 +857,6 @@ export default function SettingsPage() {
               </Card>
             </TabsContent>
 
-            {/* Referrals Tab */}
             <TabsContent value="referrals" className="space-y-6">
               <Card className="border-accent/30 bg-gradient-to-r from-accent/5 to-transparent">
                 <CardContent className="py-6">
@@ -952,12 +947,15 @@ export default function SettingsPage() {
               </Card>
             </TabsContent>
           </Tabs>
+            </>
+          )}
         </div>
       </main>
 
-      <Footer />
+      <Suspense fallback={<div className="h-32 bg-card animate-pulse" />}>
+        <Footer />
+      </Suspense>
 
-      {/* Edit Profile Dialog */}
       <Dialog open={editProfileOpen} onOpenChange={setEditProfileOpen}>
         <DialogContent>
           <DialogHeader>
@@ -985,7 +983,6 @@ export default function SettingsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Add Vehicle Dialog */}
       <Dialog open={addVehicleOpen} onOpenChange={setAddVehicleOpen}>
         <DialogContent>
           <DialogHeader>
@@ -1042,13 +1039,11 @@ export default function SettingsPage() {
                   <SelectValue placeholder="Select insurance provider" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="State Farm">State Farm</SelectItem>
-                  <SelectItem value="Geico">Geico</SelectItem>
-                  <SelectItem value="Progressive">Progressive</SelectItem>
-                  <SelectItem value="Allstate">Allstate</SelectItem>
-                  <SelectItem value="USAA">USAA</SelectItem>
-                  <SelectItem value="Liberty Mutual">Liberty Mutual</SelectItem>
-                  <SelectItem value="Other">Other</SelectItem>
+                  {insuranceProviders.map((provider) => (
+                    <SelectItem key={provider} value={provider}>
+                      {provider}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -1064,7 +1059,6 @@ export default function SettingsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Add Bank Dialog */}
       <Dialog open={addBankOpen} onOpenChange={setAddBankOpen}>
         <DialogContent>
           <DialogHeader>
@@ -1079,12 +1073,11 @@ export default function SettingsPage() {
                   <SelectValue placeholder="Select your bank" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Chase">Chase</SelectItem>
-                  <SelectItem value="Bank of America">Bank of America</SelectItem>
-                  <SelectItem value="Wells Fargo">Wells Fargo</SelectItem>
-                  <SelectItem value="Citibank">Citibank</SelectItem>
-                  <SelectItem value="Capital One">Capital One</SelectItem>
-                  <SelectItem value="Other">Other Bank</SelectItem>
+                  {bankNames.map((bank) => (
+                    <SelectItem key={bank} value={bank}>
+                      {bank}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

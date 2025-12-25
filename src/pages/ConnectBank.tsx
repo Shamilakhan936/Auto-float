@@ -1,16 +1,17 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Building2, CheckCircle2, ArrowRight, Lock, Shield, AlertCircle, Loader2 } from "lucide-react";
-import { Header } from "@/components/layout/Header";
-import { Footer } from "@/components/layout/Footer";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { addDays } from "date-fns";
+
+const Header = lazy(() => import("@/components/layout/Header").then(m => ({ default: m.Header })));
+const Footer = lazy(() => import("@/components/layout/Footer").then(m => ({ default: m.Footer })));
 
 const banks = [
   { id: "chase", name: "Chase", logo: "🏦" },
@@ -22,6 +23,21 @@ const banks = [
 ];
 
 type Step = "connect" | "settlement" | "confirm" | "complete";
+
+const settlementOptions = [
+  {
+    id: "payday" as const,
+    title: "On Payday",
+    description: "Balance clears when your paycheck arrives (you set the date).",
+  },
+  {
+    id: "month-end" as const,
+    title: "Month-End",
+    description: "Balance clears on the last day of each month.",
+  },
+];
+
+const stepLabels = ["connect", "settlement", "confirm"];
 
 export default function ConnectBankPage() {
   const { user, loading: authLoading } = useAuth();
@@ -75,7 +91,6 @@ export default function ConnectBankPage() {
     try {
       const bankName = banks.find(b => b.id === selectedBank)?.name || "Bank";
       
-      // Insert or update bank account
       const { error: bankError } = await supabase.from("bank_accounts").upsert({
         user_id: user.id,
         bank_name: bankName,
@@ -84,7 +99,6 @@ export default function ConnectBankPage() {
         is_connected: true,
       }, { onConflict: "user_id,is_primary" });
 
-      // Update subscription with settlement timing
       const nextSettlement = addDays(new Date(), 30);
       const { error: subError } = await supabase
         .from("subscriptions")
@@ -130,15 +144,16 @@ export default function ConnectBankPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <Header />
+      <Suspense fallback={<div className="h-16 bg-card animate-pulse" />}>
+        <Header />
+      </Suspense>
       
       <main className="flex-1 py-12 md:py-20">
         <div className="container px-4 max-w-2xl mx-auto">
-          {/* Progress */}
           {step !== "complete" && (
             <div className="mb-10">
               <div className="flex items-center justify-center gap-4">
-                {["connect", "settlement", "confirm"].map((s, index) => (
+                {stepLabels.map((s, index) => (
                   <div key={s} className="flex items-center">
                     <div
                       className={cn(
@@ -148,7 +163,7 @@ export default function ConnectBankPage() {
                           : "bg-secondary text-muted-foreground"
                       )}
                     >
-                      {["settlement", "confirm"].indexOf(step) > ["connect", "settlement", "confirm"].indexOf(s) ? (
+                      {stepLabels.indexOf(step) > stepLabels.indexOf(s) ? (
                         <CheckCircle2 className="h-5 w-5" />
                       ) : (
                         index + 1
@@ -158,7 +173,7 @@ export default function ConnectBankPage() {
                       <div
                         className={cn(
                           "h-1 w-16 sm:w-24 mx-2 rounded-full transition-colors",
-                          ["settlement", "confirm"].indexOf(step) > index ? "bg-accent" : "bg-secondary"
+                          stepLabels.indexOf(step) > index ? "bg-accent" : "bg-secondary"
                         )}
                       />
                     )}
@@ -168,7 +183,6 @@ export default function ConnectBankPage() {
             </div>
           )}
           
-          {/* Step: Connect Bank */}
           {step === "connect" && (
             <Card className="animate-scale-in">
               <CardHeader className="text-center">
@@ -231,7 +245,6 @@ export default function ConnectBankPage() {
             </Card>
           )}
           
-          {/* Step: Settlement Timing */}
           {step === "settlement" && (
             <Card className="animate-scale-in">
               <CardHeader className="text-center">
@@ -242,34 +255,21 @@ export default function ConnectBankPage() {
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {settlementOptions.map((option) => (
                   <button
-                    onClick={() => setSettlementTiming("payday")}
+                      key={option.id}
+                      onClick={() => setSettlementTiming(option.id)}
                     className={cn(
                       "rounded-xl border-2 p-6 text-left transition-all",
-                      settlementTiming === "payday"
+                        settlementTiming === option.id
                         ? "border-accent bg-accent/5"
                         : "border-border hover:border-accent/30"
                     )}
                   >
-                    <p className="text-lg font-semibold text-foreground mb-2">On Payday</p>
-                    <p className="text-sm text-muted-foreground">
-                      Balance clears when your paycheck arrives (you set the date).
-                    </p>
+                      <p className="text-lg font-semibold text-foreground mb-2">{option.title}</p>
+                      <p className="text-sm text-muted-foreground">{option.description}</p>
                   </button>
-                  <button
-                    onClick={() => setSettlementTiming("month-end")}
-                    className={cn(
-                      "rounded-xl border-2 p-6 text-left transition-all",
-                      settlementTiming === "month-end"
-                        ? "border-accent bg-accent/5"
-                        : "border-border hover:border-accent/30"
-                    )}
-                  >
-                    <p className="text-lg font-semibold text-foreground mb-2">Month-End</p>
-                    <p className="text-sm text-muted-foreground">
-                      Balance clears on the last day of each month.
-                    </p>
-                  </button>
+                  ))}
                 </div>
                 
                 <Button
@@ -285,7 +285,6 @@ export default function ConnectBankPage() {
             </Card>
           )}
           
-          {/* Step: Confirm */}
           {step === "confirm" && (
             <Card className="animate-scale-in">
               <CardHeader className="text-center">
@@ -353,7 +352,6 @@ export default function ConnectBankPage() {
             </Card>
           )}
           
-          {/* Step: Complete */}
           {step === "complete" && (
             <div className="text-center animate-scale-in">
               <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-success/10 text-success animate-pulse-glow">
@@ -389,7 +387,9 @@ export default function ConnectBankPage() {
         </div>
       </main>
       
-      <Footer />
+      <Suspense fallback={<div className="h-32 bg-card animate-pulse" />}>
+        <Footer />
+      </Suspense>
     </div>
   );
 }

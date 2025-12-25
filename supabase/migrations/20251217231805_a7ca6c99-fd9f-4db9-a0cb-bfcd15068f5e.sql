@@ -12,7 +12,6 @@ FOR SELECT
 TO anon
 USING (true);
 
--- Allow public/anonymous read access to payment_plans for admin panel
 CREATE POLICY "Allow public read access to payment_plans" 
 ON public.payment_plans 
 FOR SELECT 

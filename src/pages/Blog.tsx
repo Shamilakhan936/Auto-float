@@ -1,5 +1,7 @@
-import { Header } from "@/components/layout/Header";
-import { Footer } from "@/components/layout/Footer";
+import { lazy, Suspense } from "react";
+
+const Header = lazy(() => import("@/components/layout/Header").then(m => ({ default: m.Header })));
+const Footer = lazy(() => import("@/components/layout/Footer").then(m => ({ default: m.Footer })));
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Calendar, ArrowRight, Clock } from "lucide-react";
@@ -58,10 +60,11 @@ const blogPosts = [
 export default function BlogPage() {
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <Header />
+      <Suspense fallback={<div className="h-16 bg-card animate-pulse" />}>
+        <Header />
+      </Suspense>
       
       <main className="flex-1">
-        {/* Hero */}
         <section className="py-16 md:py-24">
           <div className="container px-4">
             <div className="mx-auto max-w-3xl text-center">
@@ -76,7 +79,6 @@ export default function BlogPage() {
           </div>
         </section>
         
-        {/* Blog Posts */}
         <section className="py-8 pb-24">
           <div className="container px-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
@@ -110,7 +112,9 @@ export default function BlogPage() {
         </section>
       </main>
       
-      <Footer />
+      <Suspense fallback={<div className="h-32 bg-card animate-pulse" />}>
+        <Footer />
+      </Suspense>
     </div>
   );
 }

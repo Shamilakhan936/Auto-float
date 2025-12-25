@@ -2,7 +2,6 @@
 INSERT INTO storage.buckets (id, name, public)
 VALUES ('user-documents', 'user-documents', false);
 
--- RLS policies for user documents bucket
 CREATE POLICY "Users can upload their own documents"
 ON storage.objects
 FOR INSERT
