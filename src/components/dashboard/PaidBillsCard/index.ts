@@ -1,0 +1,2 @@
+export { PaidBillsCard } from "./PaidBillsCard";
+

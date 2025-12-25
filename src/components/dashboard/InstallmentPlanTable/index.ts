@@ -1,0 +1,3 @@
+export { InstallmentPlanTable } from "./InstallmentPlanTable";
+
+

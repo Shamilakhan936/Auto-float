@@ -1,44 +1,22 @@
-import { useState, useRef } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { 
-  Car, 
-  Mail, 
-  Lock, 
-  User, 
-  ArrowRight, 
-  ArrowLeft,
-  CheckCircle2, 
-  Shield, 
-  CreditCard,
-  Zap,
-  Crown,
-  Building2,
-  Loader2,
-  Upload,
-  FileText,
-  IdCard,
-  Receipt,
-  MapPin,
-  Phone,
-  KeyRound,
-  Plus,
-  Trash2,
-  Calendar,
-  DollarSign
-} from "lucide-react";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Zap, Crown, Car } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { z } from "zod";
-import { cn } from "@/lib/utils";
 import { addDays } from "date-fns";
+import { AuthLogo } from "@/components/auth/AuthLogo/AuthLogo";
+import { SignInForm } from "@/components/auth/SignInForm/SignInForm";
+import { AuthProgress } from "@/components/auth/AuthProgress/AuthProgress";
+import { AccountStep } from "@/components/auth/SignUpSteps/AccountStep/AccountStep";
+import { VerifyStep } from "@/components/auth/SignUpSteps/VerifyStep/VerifyStep";
+import { PlanStep } from "@/components/auth/SignUpSteps/PlanStep/PlanStep";
+import { BillsStep } from "@/components/auth/SignUpSteps/BillsStep/BillsStep";
+import { PaymentStep } from "@/components/auth/SignUpSteps/PaymentStep/PaymentStep";
+import { CompleteStep } from "@/components/auth/SignUpSteps/CompleteStep/CompleteStep";
+import { PaymentModal } from "@/components/auth/PaymentModal/PaymentModal";
+import { AuthTerms } from "@/components/auth/AuthTerms/AuthTerms";
 
 const billCategories = [
   { value: "rent", label: "Rent/Mortgage" },
@@ -154,9 +132,6 @@ export default function AuthPage() {
   const [paystubFile, setPaystubFile] = useState<File | null>(null);
   const [carInsuranceFile, setCarInsuranceFile] = useState<File | null>(null);
   const [uploadingDocs, setUploadingDocs] = useState(false);
-  const driverLicenseInputRef = useRef<HTMLInputElement>(null);
-  const paystubInputRef = useRef<HTMLInputElement>(null);
-  const carInsuranceInputRef = useRef<HTMLInputElement>(null);
 
   // Bills upload
   const [bills, setBills] = useState<Array<{ name: string; amount: string; category: string; dueDate: string }>>([]);
@@ -164,7 +139,6 @@ export default function AuthPage() {
   const [newBillAmount, setNewBillAmount] = useState("");
   const [newBillCategory, setNewBillCategory] = useState("");
   const [newBillDueDate, setNewBillDueDate] = useState("");
-  const billFileInputRef = useRef<HTMLInputElement>(null);
 
   // Credit card payment
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -488,21 +462,9 @@ export default function AuthPage() {
     }
   };
 
-  const skipSetup = () => {
-    setSignupStep("complete");
-  };
-
   const goToDashboard = () => {
     navigate("/dashboard");
   };
-
-  const signupSteps = [
-    { id: "account", label: "Account" },
-    { id: "verify", label: "Verify" },
-    { id: "plan", label: "Plan" },
-    { id: "bills", label: "Bills" },
-    { id: "payment", label: "Payment" },
-  ];
 
   const addBill = () => {
     if (!newBillName || !newBillAmount || !newBillCategory || !newBillDueDate) {
@@ -612,9 +574,6 @@ export default function AuthPage() {
     return v;
   };
 
-  const currentStepIndex = signupSteps.findIndex(s => s.id === signupStep);
-  const currentPlan = plans.find(p => p.tier === selectedPlan);
-
   // Sign in form
   if (!isSignUp) {
     return (
@@ -622,98 +581,25 @@ export default function AuthPage() {
         <div className="flex-1 flex items-center justify-center p-4">
           <div className="w-full max-w-md">
             <div className="text-center mb-8">
-              <Link to="/" className="inline-flex items-center gap-2">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-accent">
-                  <Car className="h-6 w-6 text-accent-foreground" />
-                </div>
-                <span className="text-2xl font-bold text-foreground">AutoFloat</span>
-              </Link>
+              <AuthLogo />
             </div>
             
-            <Card className="animate-scale-in">
-              <CardHeader className="text-center">
-                <Badge variant="accent" className="w-fit mx-auto mb-2">
-                  Welcome Back
-                </Badge>
-                <CardTitle className="text-2xl">Sign in to your account</CardTitle>
-                <CardDescription>
-                  Enter your credentials to access your dashboard
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleSignIn} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="email"
-                        type="email"
-                        placeholder="john@example.com"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="pl-10"
-                      />
-                    </div>
-                    {errors.email && (
-                      <p className="text-xs text-destructive">{errors.email}</p>
-                    )}
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="password">Password</Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="password"
-                        type="password"
-                        placeholder="••••••••"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="pl-10"
-                      />
-                    </div>
-                    {errors.password && (
-                      <p className="text-xs text-destructive">{errors.password}</p>
-                    )}
-                  </div>
-                  
-                  <Button
-                    type="submit"
-                    variant="accent"
-                    className="w-full"
-                    disabled={isLoading}
-                  >
-                    {isLoading ? "Please wait..." : "Sign In"}
-                    <ArrowRight className="h-4 w-4 ml-2" />
-                  </Button>
-                </form>
-                
-                <div className="mt-6 text-center">
-                  <p className="text-sm text-muted-foreground">
-                    Don't have an account?{" "}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsSignUp(true);
-                        setSignupStep("account");
-                        setErrors({});
-                      }}
-                      className="text-accent font-medium hover:underline"
-                    >
-                      Create one
-                    </button>
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+            <SignInForm
+              email={email}
+              password={password}
+              errors={errors}
+              isLoading={isLoading}
+              onEmailChange={setEmail}
+              onPasswordChange={setPassword}
+              onSubmit={handleSignIn}
+              onSwitchToSignUp={() => {
+                setIsSignUp(true);
+                setSignupStep("account");
+                setErrors({});
+              }}
+            />
             
-            <p className="text-center text-sm text-muted-foreground mt-6">
-              By continuing, you agree to our{" "}
-              <Link to="/terms" className="text-accent hover:underline">Terms</Link>
-              {" "}and{" "}
-              <Link to="/privacy" className="text-accent hover:underline">Privacy Policy</Link>
-            </p>
+            <AuthTerms />
           </div>
         </div>
       </div>
@@ -721,824 +607,149 @@ export default function AuthPage() {
   }
 
   // Sign up flow
+  const signupSteps = [
+    { id: "account", label: "Account" },
+    { id: "verify", label: "Verify" },
+    { id: "plan", label: "Plan" },
+    { id: "bills", label: "Bills" },
+    { id: "payment", label: "Payment" },
+  ];
+
+  const currentStepIndex = signupSteps.findIndex(s => s.id === signupStep);
+  const currentPlan = plans.find(p => p.tier === selectedPlan);
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <div className="flex-1 flex items-center justify-center p-4 py-8">
         <div className="w-full max-w-xl">
-          {/* Logo */}
-          <div className="text-center mb-6">
-            <Link to="/" className="inline-flex items-center gap-2">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent">
-                <Car className="h-5 w-5 text-accent-foreground" />
-              </div>
-              <span className="text-xl font-bold text-foreground">AutoFloat</span>
-            </Link>
-          </div>
+          <AuthLogo />
 
-          {/* Progress Steps */}
           {signupStep !== "complete" && (
-            <div className="mb-8">
-              <div className="flex items-center justify-center gap-2">
-                {signupSteps.map((s, index) => (
-                  <div key={s.id} className="flex items-center">
-                    <div
-                      className={cn(
-                        "flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold transition-colors",
-                        index <= currentStepIndex
-                          ? "bg-accent text-accent-foreground"
-                          : "bg-secondary text-muted-foreground"
-                      )}
-                    >
-                      {index < currentStepIndex ? (
-                        <CheckCircle2 className="h-4 w-4" />
-                      ) : (
-                        index + 1
-                      )}
-                    </div>
-                    {index < signupSteps.length - 1 && (
-                      <div
-                        className={cn(
-                          "h-0.5 w-8 sm:w-12 mx-1 rounded-full transition-colors",
-                          index < currentStepIndex ? "bg-accent" : "bg-secondary"
-                        )}
-                      />
-                    )}
-                  </div>
-                ))}
-              </div>
-              <div className="flex justify-center mt-2">
-                <span className="text-xs text-muted-foreground">
-                  {signupSteps[currentStepIndex]?.label}
-                </span>
-              </div>
-            </div>
+            <AuthProgress steps={signupSteps} currentStep={signupStep} />
           )}
 
-          {/* Step: Account Creation */}
           {signupStep === "account" && (
-            <Card className="animate-scale-in">
-              <CardHeader className="text-center">
-                <Badge variant="accent" className="w-fit mx-auto mb-2">
-                  Create Account
-                </Badge>
-                <CardTitle className="text-2xl">Get started with AutoFloat</CardTitle>
-                <CardDescription>
-                  Create your account to start managing your bills
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleCreateAccount} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="firstName">First Name</Label>
-                      <div className="relative">
-                        <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          id="firstName"
-                          placeholder="John"
-                          value={firstName}
-                          onChange={(e) => setFirstName(e.target.value)}
-                          className="pl-10"
-                        />
-                      </div>
-                      {errors.firstName && (
-                        <p className="text-xs text-destructive">{errors.firstName}</p>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="lastName">Last Name</Label>
-                      <Input
-                        id="lastName"
-                        placeholder="Doe"
-                        value={lastName}
-                        onChange={(e) => setLastName(e.target.value)}
-                      />
-                      {errors.lastName && (
-                        <p className="text-xs text-destructive">{errors.lastName}</p>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="email"
-                        type="email"
-                        placeholder="john@example.com"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="pl-10"
-                      />
-                    </div>
-                    {errors.email && (
-                      <p className="text-xs text-destructive">{errors.email}</p>
-                    )}
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="password">Password</Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="password"
-                        type="password"
-                        placeholder="••••••••"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="pl-10"
-                      />
-                    </div>
-                    {errors.password && (
-                      <p className="text-xs text-destructive">{errors.password}</p>
-                    )}
-                  </div>
-                  
-                  <Button
-                    type="submit"
-                    variant="accent"
-                    className="w-full"
-                    disabled={isLoading}
-                  >
-                    {isLoading ? "Creating account..." : "Continue"}
-                    <ArrowRight className="h-4 w-4 ml-2" />
-                  </Button>
-                </form>
-                
-                <div className="mt-6 text-center">
-                  <p className="text-sm text-muted-foreground">
-                    Already have an account?{" "}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsSignUp(false);
-                        setErrors({});
-                      }}
-                      className="text-accent font-medium hover:underline"
-                    >
-                      Sign in
-                    </button>
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+            <AccountStep
+              firstName={firstName}
+              lastName={lastName}
+              email={email}
+              password={password}
+              errors={errors}
+              isLoading={isLoading}
+              onFirstNameChange={setFirstName}
+              onLastNameChange={setLastName}
+              onEmailChange={setEmail}
+              onPasswordChange={setPassword}
+              onSubmit={handleCreateAccount}
+              onSwitchToSignIn={() => {
+                setIsSignUp(false);
+                setErrors({});
+              }}
+            />
           )}
 
-          {/* Step: Verify (Vehicle + Identity Combined) */}
           {signupStep === "verify" && (
-            <Card className="animate-scale-in">
-              <CardHeader className="text-center pb-4">
-                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-accent/10 text-accent">
-                  <Shield className="h-6 w-6" />
-                </div>
-                <CardTitle className="text-xl">Verify Your Information</CardTitle>
-                <CardDescription className="text-sm">
-                  Complete verification to unlock full access
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Vehicle Section */}
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Car className="h-4 w-4 text-accent" />
-                    <span className="font-medium text-sm text-foreground">Vehicle (Optional)</span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      onClick={() => setVerificationMethod("vin")}
-                      className={cn(
-                        "rounded-lg border-2 p-3 text-left transition-all",
-                        verificationMethod === "vin"
-                          ? "border-accent bg-accent/5"
-                          : "border-border hover:border-accent/30"
-                      )}
-                    >
-                      <p className="font-medium text-sm text-foreground">VIN</p>
-                      <p className="text-xs text-muted-foreground">17-char ID</p>
-                    </button>
-                    <button
-                      onClick={() => setVerificationMethod("plate")}
-                      className={cn(
-                        "rounded-lg border-2 p-3 text-left transition-all",
-                        verificationMethod === "plate"
-                          ? "border-accent bg-accent/5"
-                          : "border-border hover:border-accent/30"
-                      )}
-                    >
-                      <p className="font-medium text-sm text-foreground">Plate</p>
-                      <p className="text-xs text-muted-foreground">License #</p>
-                    </button>
-                  </div>
-                  
-                  {verificationMethod === "vin" && (
-                    <Input
-                      placeholder="Enter your 17-character VIN"
-                      value={vin}
-                      onChange={(e) => setVin(e.target.value)}
-                      maxLength={17}
-                    />
-                  )}
-                  
-                  {verificationMethod === "plate" && (
-                    <Input
-                      placeholder="Enter your license plate"
-                      value={licensePlate}
-                      onChange={(e) => setLicensePlate(e.target.value)}
-                    />
-                  )}
-                  
-                  {verificationMethod && (
-                    <Input
-                      placeholder="Insurance Provider (optional)"
-                      value={insuranceProvider}
-                      onChange={(e) => setInsuranceProvider(e.target.value)}
-                    />
-                  )}
-                </div>
-
-                <div className="border-t border-border pt-4 space-y-3">
-                  <div className="flex items-center gap-2">
-                    <User className="h-4 w-4 text-accent" />
-                    <span className="font-medium text-sm text-foreground">Personal Information</span>
-                  </div>
-                  
-                  <Input
-                    placeholder="Full Legal Name"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                  />
-                  
-                  <Input
-                    placeholder="Home Address"
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                  />
-                  
-                  <div className="grid grid-cols-2 gap-2">
-                    <Input
-                      type="tel"
-                      placeholder="Phone Number"
-                      value={phoneNumber}
-                      onChange={(e) => setPhoneNumber(e.target.value)}
-                    />
-                    <Input
-                      type="password"
-                      placeholder="SSN (Last 4)"
-                      maxLength={4}
-                      value={ssn}
-                      onChange={(e) => setSsn(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                    />
-                  </div>
-                </div>
-
-                <div className="border-t border-border pt-4 space-y-3">
-                  <div className="flex items-center gap-2">
-                    <FileText className="h-4 w-4 text-accent" />
-                    <span className="font-medium text-sm text-foreground">Documents</span>
-                  </div>
-                  
-                  <div className="grid grid-cols-3 gap-2">
-                    <div>
-                      <input
-                        type="file"
-                        ref={driverLicenseInputRef}
-                        accept="image/*,.pdf"
-                        onChange={(e) => setDriverLicenseFile(e.target.files?.[0] || null)}
-                        className="hidden"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => driverLicenseInputRef.current?.click()}
-                        className={cn(
-                          "w-full rounded-lg border-2 border-dashed p-3 text-center transition-all",
-                          driverLicenseFile
-                            ? "border-accent bg-accent/5"
-                            : "border-border hover:border-accent/30"
-                        )}
-                      >
-                        {driverLicenseFile ? (
-                          <div className="flex items-center justify-center gap-1">
-                            <CheckCircle2 className="h-4 w-4 text-accent" />
-                            <span className="text-xs font-medium text-foreground truncate max-w-[60px]">{driverLicenseFile.name}</span>
-                          </div>
-                        ) : (
-                          <div className="space-y-1">
-                            <IdCard className="h-5 w-5 mx-auto text-muted-foreground" />
-                            <p className="text-xs text-muted-foreground">Driver's License</p>
-                          </div>
-                        )}
-                      </button>
-                    </div>
-                    
-                    <div>
-                      <input
-                        type="file"
-                        ref={paystubInputRef}
-                        accept="image/*,.pdf"
-                        onChange={(e) => setPaystubFile(e.target.files?.[0] || null)}
-                        className="hidden"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => paystubInputRef.current?.click()}
-                        className={cn(
-                          "w-full rounded-lg border-2 border-dashed p-3 text-center transition-all",
-                          paystubFile
-                            ? "border-accent bg-accent/5"
-                            : "border-border hover:border-accent/30"
-                        )}
-                      >
-                        {paystubFile ? (
-                          <div className="flex items-center justify-center gap-1">
-                            <CheckCircle2 className="h-4 w-4 text-accent" />
-                            <span className="text-xs font-medium text-foreground truncate max-w-[60px]">{paystubFile.name}</span>
-                          </div>
-                        ) : (
-                          <div className="space-y-1">
-                            <Receipt className="h-5 w-5 mx-auto text-muted-foreground" />
-                            <p className="text-xs text-muted-foreground">Paystub</p>
-                          </div>
-                        )}
-                      </button>
-                    </div>
-
-                    <div>
-                      <input
-                        type="file"
-                        ref={carInsuranceInputRef}
-                        accept="image/*,.pdf"
-                        onChange={(e) => setCarInsuranceFile(e.target.files?.[0] || null)}
-                        className="hidden"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => carInsuranceInputRef.current?.click()}
-                        className={cn(
-                          "w-full rounded-lg border-2 border-dashed p-3 text-center transition-all",
-                          carInsuranceFile
-                            ? "border-accent bg-accent/5"
-                            : "border-border hover:border-accent/30"
-                        )}
-                      >
-                        {carInsuranceFile ? (
-                          <div className="flex items-center justify-center gap-1">
-                            <CheckCircle2 className="h-4 w-4 text-accent" />
-                            <span className="text-xs font-medium text-foreground truncate max-w-[60px]">{carInsuranceFile.name}</span>
-                          </div>
-                        ) : (
-                          <div className="space-y-1">
-                            <Car className="h-5 w-5 mx-auto text-muted-foreground" />
-                            <p className="text-xs text-muted-foreground">Car Insurance</p>
-                          </div>
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="flex gap-2 pt-2">
-                  <Button
-                    variant="outline"
-                    className="flex-1"
-                    onClick={skipVerification}
-                    disabled={isLoading || uploadingDocs}
-                  >
-                    Skip
-                  </Button>
-                  <Button
-                    variant="accent"
-                    className="flex-1"
-                    onClick={async () => {
-                      await handleVehicleVerification();
-                      if (fullName && address && phoneNumber && ssn && driverLicenseFile && paystubFile && carInsuranceFile) {
-                        await handleIdentityVerification();
-                      }
-                    }}
-                    disabled={isLoading || uploadingDocs}
-                  >
-                    {(isLoading || uploadingDocs) ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                        Verifying...
-                      </>
-                    ) : (
-                      <>
-                        Continue
-                        <ArrowRight className="h-4 w-4 ml-2" />
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+            <VerifyStep
+              verificationMethod={verificationMethod}
+              vin={vin}
+              licensePlate={licensePlate}
+              insuranceProvider={insuranceProvider}
+              fullName={fullName}
+              address={address}
+              phoneNumber={phoneNumber}
+              ssn={ssn}
+              driverLicenseFile={driverLicenseFile}
+              paystubFile={paystubFile}
+              carInsuranceFile={carInsuranceFile}
+              isLoading={isLoading}
+              uploadingDocs={uploadingDocs}
+              onVerificationMethodChange={setVerificationMethod}
+              onVinChange={setVin}
+              onLicensePlateChange={setLicensePlate}
+              onInsuranceProviderChange={setInsuranceProvider}
+              onFullNameChange={setFullName}
+              onAddressChange={setAddress}
+              onPhoneNumberChange={setPhoneNumber}
+              onSsnChange={(value) => setSsn(value.replace(/\D/g, '').slice(0, 4))}
+              onDriverLicenseFileChange={setDriverLicenseFile}
+              onPaystubFileChange={setPaystubFile}
+              onCarInsuranceFileChange={setCarInsuranceFile}
+              onSkip={skipVerification}
+              onContinue={async () => {
+                await handleVehicleVerification();
+                if (fullName && address && phoneNumber && ssn && driverLicenseFile && paystubFile && carInsuranceFile) {
+                  await handleIdentityVerification();
+                }
+              }}
+            />
           )}
 
-          {/* Step: Plan Selection */}
           {signupStep === "plan" && (
-            <Card className="animate-scale-in">
-              <CardHeader className="text-center">
-                <CardTitle className="text-2xl">Choose Your Plan</CardTitle>
-                <CardDescription>
-                  Select the plan that fits your needs
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 gap-3">
-                  {plans.map((plan) => (
-                    <button
-                      key={plan.tier}
-                      onClick={() => setSelectedPlan(plan.tier)}
-                      className={cn(
-                        "flex items-center justify-between rounded-xl border-2 p-4 text-left transition-all",
-                        selectedPlan === plan.tier
-                          ? "border-accent bg-accent/5"
-                          : "border-border hover:border-accent/30"
-                      )}
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className={cn(
-                          "flex h-12 w-12 items-center justify-center rounded-xl",
-                          selectedPlan === plan.tier ? "bg-accent text-accent-foreground" : "bg-secondary"
-                        )}>
-                          <plan.icon className="h-6 w-6" />
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <p className="font-semibold text-foreground">{plan.name}</p>
-                            {plan.popular && (
-                              <Badge variant="accent" className="text-xs">Popular</Badge>
-                            )}
-                          </div>
-                          <p className="text-sm text-muted-foreground">{plan.description}</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-xl font-bold text-foreground">${plan.price}</p>
-                        <p className="text-xs text-muted-foreground">Up to ${plan.maxAccess.toLocaleString()}</p>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-                
-                <Button
-                  variant="accent"
-                  className="w-full"
-                  onClick={handlePlanSelection}
-                  disabled={isLoading}
-                >
-                  {isLoading ? "Updating..." : "Continue"}
-                  <ArrowRight className="h-4 w-4 ml-2" />
-                </Button>
-              </CardContent>
-            </Card>
+            <PlanStep
+              plans={plans}
+              selectedPlan={selectedPlan}
+              isLoading={isLoading}
+              onPlanSelect={setSelectedPlan}
+              onContinue={handlePlanSelection}
+            />
           )}
 
-          {/* Step: Bills Upload */}
           {signupStep === "bills" && (
-            <Card className="animate-scale-in">
-              <CardHeader className="text-center pb-4">
-                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-accent/10 text-accent">
-                  <Receipt className="h-6 w-6" />
-                </div>
-                <CardTitle className="text-xl">Add Your Bills</CardTitle>
-                <CardDescription className="text-sm">
-                  Add bills you want AutoFloat to help cover
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Added Bills List */}
-                {bills.length > 0 && (
-                  <div className="space-y-2">
-                    {bills.map((bill, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center justify-between rounded-lg border border-border bg-secondary/30 p-3"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent/10">
-                            <Receipt className="h-5 w-5 text-accent" />
-                          </div>
-                          <div>
-                            <p className="font-medium text-sm text-foreground">{bill.name}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {billCategories.find(c => c.value === bill.category)?.label} • Due: {bill.dueDate}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <span className="font-semibold text-foreground">${parseFloat(bill.amount).toFixed(2)}</span>
-                          <button
-                            onClick={() => removeBill(index)}
-                            className="text-muted-foreground hover:text-destructive transition-colors"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                    <div className="flex items-center justify-between pt-2 border-t border-border">
-                      <span className="font-medium text-foreground">Total Monthly Bills</span>
-                      <span className="font-bold text-accent">
-                        ${bills.reduce((sum, b) => sum + parseFloat(b.amount || "0"), 0).toFixed(2)}
-                      </span>
-                    </div>
-                  </div>
-                )}
-
-                {/* Add Bill Form */}
-                <div className="space-y-3 border border-border rounded-lg p-4">
-                  <div className="flex items-center gap-2">
-                    <Plus className="h-4 w-4 text-accent" />
-                    <span className="font-medium text-sm text-foreground">Add a Bill</span>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="space-y-1">
-                      <Label className="text-xs">Bill Name</Label>
-                      <Input
-                        placeholder="e.g., Electric Bill"
-                        value={newBillName}
-                        onChange={(e) => setNewBillName(e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">Amount</Label>
-                      <div className="relative">
-                        <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          type="number"
-                          placeholder="0.00"
-                          value={newBillAmount}
-                          onChange={(e) => setNewBillAmount(e.target.value)}
-                          className="pl-9"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="space-y-1">
-                      <Label className="text-xs">Category</Label>
-                      <Select value={newBillCategory} onValueChange={setNewBillCategory}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select category" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {billCategories.map((cat) => (
-                            <SelectItem key={cat.value} value={cat.value}>
-                              {cat.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">Due Date</Label>
-                      <Input
-                        type="date"
-                        value={newBillDueDate}
-                        onChange={(e) => setNewBillDueDate(e.target.value)}
-                      />
-                    </div>
-                  </div>
-                  
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full"
-                    onClick={addBill}
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Bill
-                  </Button>
-                </div>
-
-                <div className="flex gap-2 pt-2">
-                  <Button
-                    variant="outline"
-                    className="flex-1"
-                    onClick={() => setSignupStep("payment")}
-                    disabled={isLoading}
-                  >
-                    Skip
-                  </Button>
-                  <Button
-                    variant="accent"
-                    className="flex-1"
-                    onClick={handleBillsSubmit}
-                    disabled={isLoading || bills.length === 0}
-                  >
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                        Saving...
-                      </>
-                    ) : (
-                      <>
-                        Continue
-                        <ArrowRight className="h-4 w-4 ml-2" />
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+            <BillsStep
+              bills={bills}
+              newBillName={newBillName}
+              newBillAmount={newBillAmount}
+              newBillCategory={newBillCategory}
+              newBillDueDate={newBillDueDate}
+              billCategories={billCategories}
+              isLoading={isLoading}
+              onNewBillNameChange={setNewBillName}
+              onNewBillAmountChange={setNewBillAmount}
+              onNewBillCategoryChange={setNewBillCategory}
+              onNewBillDueDateChange={setNewBillDueDate}
+              onAddBill={addBill}
+              onRemoveBill={removeBill}
+              onSkip={() => setSignupStep("payment")}
+              onContinue={handleBillsSubmit}
+            />
           )}
 
-          {/* Step: Payment */}
           {signupStep === "payment" && (
-            <Card className="animate-scale-in">
-              <CardHeader className="text-center pb-4">
-                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-accent/10 text-accent">
-                  <CreditCard className="h-6 w-6" />
-                </div>
-                <CardTitle className="text-xl">Payment</CardTitle>
-                <CardDescription className="text-sm">
-                  Pay for your subscription to continue
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Payment Summary */}
-                <div className="rounded-lg border border-border bg-secondary/30 p-4 space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Plan</span>
-                    <span className="font-medium text-foreground">{currentPlan?.name}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Monthly Fee</span>
-                    <span className="font-medium text-foreground">${currentPlan?.price}/mo</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">First 2 Installments</span>
-                    <span className="font-medium text-foreground">${((currentPlan?.price || 0) / 2).toFixed(2)}</span>
-                  </div>
-                  <hr className="border-border" />
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold text-foreground">Total Due Today</span>
-                    <span className="font-bold text-accent text-lg">${((currentPlan?.price || 0) + ((currentPlan?.price || 0) / 2)).toFixed(2)}</span>
-                  </div>
-                </div>
-
-                <Button
-                  variant="accent"
-                  className="w-full"
-                  onClick={() => setShowPaymentModal(true)}
-                >
-                  <CreditCard className="h-4 w-4 mr-2" />
-                  Enter Card Details
-                </Button>
-
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => setSignupStep("complete")}
-                >
-                  Skip for now
-                </Button>
-              </CardContent>
-            </Card>
+            <PaymentStep
+              currentPlan={currentPlan}
+              onEnterCardDetails={() => setShowPaymentModal(true)}
+              onSkip={() => setSignupStep("complete")}
+            />
           )}
 
-          {/* Step: Complete */}
           {signupStep === "complete" && (
-            <div className="text-center animate-scale-in">
-              <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-success/10 text-success animate-pulse-glow">
-                <CheckCircle2 className="h-12 w-12" />
-              </div>
-              
-              <Badge variant="success" className="mb-4 py-2 px-4">
-                Account Activated
-              </Badge>
-              
-              <h1 className="text-3xl font-bold tracking-tight text-foreground mb-4">
-                You're all set!
-              </h1>
-              
-              <p className="text-lg text-muted-foreground mb-8 max-w-md mx-auto">
-                Your AutoFloat subscription is now active. Start adding bills to your dashboard.
-              </p>
-              
-              <div className="rounded-2xl border border-accent/30 bg-accent/5 p-8 mb-8">
-                <Badge variant="verified" className="mb-4">
-                  <Car className="h-4 w-4 mr-2" />
-                  AutoFloat Verified
-                </Badge>
-                <p className="text-sm text-muted-foreground mb-2">Your monthly access</p>
-                <p className="text-5xl font-bold text-accent">${currentPlan?.maxAccess.toLocaleString() || "3,000"}</p>
-                <p className="text-sm text-muted-foreground mt-2">Ready to use for approved bills</p>
-              </div>
-              
-              <Button variant="accent" size="xl" onClick={goToDashboard}>
-                Go to Dashboard
-                <ArrowRight className="h-5 w-5 ml-2" />
-              </Button>
-            </div>
+            <CompleteStep
+              currentPlan={currentPlan}
+              onGoToDashboard={goToDashboard}
+            />
           )}
 
-          {/* Terms */}
-          {signupStep !== "complete" && (
-            <p className="text-center text-sm text-muted-foreground mt-6">
-              By continuing, you agree to our{" "}
-              <Link to="/terms" className="text-accent hover:underline">Terms</Link>
-              {" "}and{" "}
-              <Link to="/privacy" className="text-accent hover:underline">Privacy Policy</Link>
-            </p>
-          )}
+          {signupStep !== "complete" && <AuthTerms />}
         </div>
       </div>
 
-      {/* Credit Card Payment Modal */}
-      <Dialog open={showPaymentModal} onOpenChange={setShowPaymentModal}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <CreditCard className="h-5 w-5 text-accent" />
-              Enter Payment Details
-            </DialogTitle>
-            <DialogDescription>
-              Your card will be charged ${((currentPlan?.price || 0) + ((currentPlan?.price || 0) / 2)).toFixed(2)} today.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4 pt-4">
-            <div className="space-y-2">
-              <Label>Cardholder Name</Label>
-              <Input
-                placeholder="John Doe"
-                value={cardName}
-                onChange={(e) => setCardName(e.target.value)}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label>Card Number</Label>
-              <div className="relative">
-                <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="1234 5678 9012 3456"
-                  value={cardNumber}
-                  onChange={(e) => setCardNumber(formatCardNumber(e.target.value))}
-                  maxLength={19}
-                  className="pl-10"
-                />
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Expiry Date</Label>
-                <Input
-                  placeholder="MM/YY"
-                  value={cardExpiry}
-                  onChange={(e) => setCardExpiry(formatExpiry(e.target.value))}
-                  maxLength={5}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>CVC</Label>
-                <Input
-                  placeholder="123"
-                  value={cardCvc}
-                  onChange={(e) => setCardCvc(e.target.value.replace(/\D/g, "").slice(0, 4))}
-                  maxLength={4}
-                  type="password"
-                />
-              </div>
-            </div>
-            
-            <div className="rounded-lg border border-border bg-secondary/30 p-3 space-y-1">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Amount to charge</span>
-                <span className="font-bold text-accent">${((currentPlan?.price || 0) + ((currentPlan?.price || 0) / 2)).toFixed(2)}</span>
-              </div>
-            </div>
-            
-            <Button
-              variant="accent"
-              className="w-full"
-              onClick={handleCreditCardPayment}
-              disabled={processingPayment}
-            >
-              {processingPayment ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  Processing Payment...
-                </>
-              ) : (
-                <>
-                  <CheckCircle2 className="h-4 w-4 mr-2" />
-                  Pay ${((currentPlan?.price || 0) + ((currentPlan?.price || 0) / 2)).toFixed(2)}
-                </>
-              )}
-            </Button>
-            
-            <p className="text-xs text-muted-foreground text-center">
-              Your payment is secured with 256-bit SSL encryption.
-            </p>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <PaymentModal
+        open={showPaymentModal}
+        onOpenChange={setShowPaymentModal}
+        currentPlan={currentPlan}
+        cardName={cardName}
+        cardNumber={cardNumber}
+        cardExpiry={cardExpiry}
+        cardCvc={cardCvc}
+        processingPayment={processingPayment}
+        onCardNameChange={setCardName}
+        onCardNumberChange={(value) => setCardNumber(formatCardNumber(value))}
+        onCardExpiryChange={(value) => setCardExpiry(formatExpiry(value))}
+        onCardCvcChange={(value) => setCardCvc(value.replace(/\D/g, "").slice(0, 4))}
+        onPay={handleCreditCardPayment}
+        formatCardNumber={formatCardNumber}
+        formatExpiry={formatExpiry}
+      />
     </div>
   );
 }

@@ -1,0 +1,2 @@
+export { SortableTableHead } from "./SortableTableHead";
+

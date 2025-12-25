@@ -1,0 +1,3 @@
+export { EditBankAccountDialog } from "./EditBankAccountDialog";
+
+
