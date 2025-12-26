@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { LogOut, Shield } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 
@@ -22,15 +22,14 @@ export function UserMenu({ variant = "desktop", onAction }: UserMenuProps) {
   if (variant === "mobile") {
     return (
       <div className="flex flex-col gap-3 pt-4 border-t border-border">
-        <Link to="/admin" onClick={onAction}>
-          <Button variant="outline" className="w-full text-accent">
-            <Shield className="h-4 w-4 mr-2" />
-            Admin Panel
-          </Button>
-        </Link>
         {user ? (
           <>
             <p className="text-sm text-muted-foreground">{user.email}</p>
+            <Link to="/dashboard" onClick={onAction}>
+              <Button variant="outline" className="w-full">
+                Dashboard
+              </Button>
+            </Link>
             <Button variant="outline" className="w-full" onClick={handleSignOut}>
               <LogOut className="h-4 w-4 mr-2" />
               Sign Out
@@ -56,14 +55,13 @@ export function UserMenu({ variant = "desktop", onAction }: UserMenuProps) {
 
   return (
     <div className="flex items-center gap-3">
-      <Link to="/admin">
-        <Button variant="ghost" size="sm" className="text-accent">
-          <Shield className="h-4 w-4 mr-2" />
-          Admin
-        </Button>
-      </Link>
       {user ? (
         <>
+          <Link to="/dashboard">
+            <Button variant="ghost" size="sm">
+              Dashboard
+            </Button>
+          </Link>
           <span className="text-sm text-muted-foreground">
             {user.email}
           </span>
