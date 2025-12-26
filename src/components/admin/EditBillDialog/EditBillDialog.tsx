@@ -53,7 +53,7 @@ export function EditBillDialog({ bill, open, onOpenChange, onUpdate }: EditBillD
         category,
         amount: parseFloat(amount),
         due_date: dueDate,
-        status
+        status: status as "pending" | "scheduled" | "paid" | "failed"
       })
       .eq("id", bill.id);
 
