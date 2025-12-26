@@ -62,17 +62,16 @@ export default function AboutPage() {
                   </div>
                 </div>
                 <div className="prose prose-lg text-muted-foreground space-y-4">
-                  <p className="text-lg font-semibold text-foreground">Akeem Egbeyemi</p>
+                  <p className="text-lg font-semibold text-foreground">Akeem Egbeyemi, Founder</p>
                   <p>
-                    Akeem Egbeyemi founded PayLaterr with a vision to revolutionize how people manage their 
-                    recurring expenses. Through that experience, he identified a gap in the market—consumers 
-                    with vehicles had an untapped asset that could help them access credit.
+                    With prior experience building PayLaterr, Akeem Egbeyemi created AutoFloat to solve a 
+                    critical gap in the market. He recognized that consumers with vehicles have an untapped 
+                    asset that could help them access credit where traditional routes fall short.
                   </p>
                   <p>
-                    This insight led to the creation of AutoFloat, a platform designed specifically to help 
-                    consumers use their cars as part of the underwriting process to get their recurring 
-                    expenses paid. AutoFloat provides access to credit where traditional routes fall short, 
-                    empowering people who have been overlooked by conventional financial systems.
+                    AutoFloat was built to help consumers use their cars as part of the underwriting process 
+                    to get their recurring expenses paid—empowering people who have been overlooked by 
+                    conventional financial systems.
                   </p>
                 </div>
               </div>
