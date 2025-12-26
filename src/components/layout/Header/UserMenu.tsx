@@ -1,8 +1,7 @@
-import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
+import { Link, useNavigate } from "react-router-dom";
 import { LogOut } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
 
 interface UserMenuProps {
   variant?: "desktop" | "mobile";

@@ -1,7 +1,12 @@
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
-const navLinks = [
+interface NavLink {
+  href: string;
+  label: string;
+}
+
+const navLinks: NavLink[] = [
   { href: "/", label: "Home" },
   { href: "/plans", label: "Plans" },
   { href: "/how-it-works", label: "How It Works" },

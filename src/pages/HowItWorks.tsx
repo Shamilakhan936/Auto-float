@@ -1,13 +1,23 @@
 import { lazy, Suspense } from "react";
+import { Link } from "react-router-dom";
+import { ArrowRight, CheckCircle, CreditCard, Car, Building2, Receipt, type LucideIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
-import { ArrowRight, CheckCircle, CreditCard, Car, Building2, Receipt } from "lucide-react";
 
 const Header = lazy(() => import("@/components/layout/Header").then(m => ({ default: m.Header })));
 const Footer = lazy(() => import("@/components/layout/Footer").then(m => ({ default: m.Footer })));
 
-const steps = [
+interface Step {
+  number: string;
+  icon: LucideIcon;
+  title: string;
+  description: string;
+  features: string[];
+}
+
+const ANIMATION_DELAY_MS = 150;
+
+const steps: Step[] = [
   {
     number: "01",
     icon: CreditCard,
@@ -76,7 +86,7 @@ export default function HowItWorksPage() {
                 <div
                   key={step.number}
                   className="relative flex flex-col md:flex-row gap-8 animate-fade-in opacity-0"
-                  style={{ animationDelay: `${index * 150}ms` }}
+                  style={{ animationDelay: `${index * ANIMATION_DELAY_MS}ms` }}
                 >
                   {/* Step Number & Icon */}
                   <div className="flex-shrink-0 flex items-start gap-4">

@@ -1,11 +1,19 @@
 import { lazy, Suspense } from "react";
+import { Users, Target, Heart, Zap, type LucideIcon } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 const Header = lazy(() => import("@/components/layout/Header").then(m => ({ default: m.Header })));
 const Footer = lazy(() => import("@/components/layout/Footer").then(m => ({ default: m.Footer })));
-import { Badge } from "@/components/ui/badge";
-import { Users, Target, Heart, Zap } from "lucide-react";
 
-const values = [
+interface Value {
+  icon: LucideIcon;
+  title: string;
+  description: string;
+}
+
+const ANIMATION_DELAY_MS = 100;
+
+const values: Value[] = [
   {
     icon: Heart,
     title: "Customer First",
@@ -93,7 +101,7 @@ export default function AboutPage() {
                 <div
                   key={value.title}
                   className="rounded-2xl border border-border bg-card p-8 animate-fade-in opacity-0"
-                  style={{ animationDelay: `${index * 100}ms` }}
+                  style={{ animationDelay: `${index * ANIMATION_DELAY_MS}ms` }}
                 >
                   <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-accent/10 text-accent">
                     <value.icon className="h-6 w-6" />

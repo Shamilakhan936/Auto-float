@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
 import { Dialog, DialogContent, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 import { EditBillDialogHeader } from "./EditBillDialogHeader";
 import { EditBillDialogForm } from "./EditBillDialogForm";
+
+type BillStatus = "pending" | "scheduled" | "paid" | "failed";
 
 interface Bill {
   id: string;
@@ -13,7 +15,7 @@ interface Bill {
   category: string;
   amount: number;
   due_date: string;
-  status: string;
+  status: BillStatus;
   created_at: string;
 }
 
@@ -46,15 +48,18 @@ export function EditBillDialog({ bill, open, onOpenChange, onUpdate }: EditBillD
     if (!bill) return;
     
     setSaving(true);
+    
+    const updatedData = {
+      name,
+      category,
+      amount: parseFloat(amount),
+      due_date: dueDate,
+      status: status as BillStatus,
+    };
+
     const { error } = await supabase
       .from("bills")
-      .update({
-        name,
-        category,
-        amount: parseFloat(amount),
-        due_date: dueDate,
-        status: status as "pending" | "scheduled" | "paid" | "failed"
-      })
+      .update(updatedData)
       .eq("id", bill.id);
 
     setSaving(false);
@@ -67,11 +72,7 @@ export function EditBillDialog({ bill, open, onOpenChange, onUpdate }: EditBillD
     toast.success("Bill updated successfully");
     onUpdate({
       ...bill,
-      name,
-      category,
-      amount: parseFloat(amount),
-      due_date: dueDate,
-      status
+      ...updatedData,
     });
     onOpenChange(false);
   };

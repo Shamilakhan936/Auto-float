@@ -1,6 +1,14 @@
 import { ArrowRight } from "lucide-react";
 
-const steps = [
+interface Step {
+  number: string;
+  title: string;
+  description: string;
+}
+
+const ANIMATION_DELAY_MS = 150;
+
+const steps: Step[] = [
   {
     number: "01",
     title: "Choose Your Plan",
@@ -42,7 +50,7 @@ export function HowItWorks() {
               <div
                 key={step.number}
                 className="relative flex gap-6 animate-fade-in opacity-0"
-                style={{ animationDelay: `${index * 150}ms` }}
+                style={{ animationDelay: `${index * ANIMATION_DELAY_MS}ms` }}
               >
                 <div className="flex-shrink-0">
                   <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-primary-foreground font-bold text-lg">
