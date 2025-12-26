@@ -75,25 +75,6 @@ export default function AboutPage() {
                   </p>
                 </div>
               </div>
-              
-              <h2 className="text-2xl font-bold text-foreground mb-6 mt-12">Our Story</h2>
-              <div className="prose prose-lg text-muted-foreground space-y-4">
-                <p>
-                  We started PayLaterr after experiencing firsthand the challenges of managing multiple 
-                  bills with varying due dates, amounts, and payment methods. Traditional credit 
-                  options came with high interest rates and hidden fees that made things worse, not better.
-                </p>
-                <p>
-                  We believed there had to be a better way—a subscription-based approach that gives 
-                  people access to pay their bills on time, every time, without the burden of interest 
-                  or penalties.
-                </p>
-                <p>
-                  Today, PayLaterr serves thousands of customers who trust us to help them stay on top of 
-                  their essential expenses. Our auto verification feature unlocks even higher access 
-                  limits without putting a lien on your vehicle.
-                </p>
-              </div>
             </div>
           </div>
         </section>
