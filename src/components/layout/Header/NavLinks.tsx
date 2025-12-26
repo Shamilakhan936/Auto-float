@@ -4,8 +4,8 @@ import { cn } from "@/lib/utils";
 const navLinks = [
   { href: "/", label: "Home" },
   { href: "/plans", label: "Plans" },
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/settings", label: "Settings" },
+  { href: "/#how-it-works", label: "How It Works" },
+  { href: "/about", label: "About" },
 ];
 
 interface NavLinksProps {
