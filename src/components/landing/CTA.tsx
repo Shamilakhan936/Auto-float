@@ -28,13 +28,6 @@ export function CTA() {
                   <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
                 </Button>
               </Link>
-              <Button
-                variant="hero-outline"
-                size="xl"
-                className="border-white/30 text-white hover:bg-white/10"
-              >
-                Contact Sales
-              </Button>
             </div>
           </div>
         </div>
