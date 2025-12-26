@@ -54,10 +54,28 @@ export default function AboutPage() {
         <section className="py-16 bg-secondary/30">
           <div className="container px-4">
             <div className="mx-auto max-w-3xl">
-              <h2 className="text-2xl font-bold text-foreground mb-6">Our Story</h2>
+              <h2 className="text-2xl font-bold text-foreground mb-6">Our Founder</h2>
+              <div className="flex flex-col md:flex-row gap-8 items-start mb-8">
+                <div className="flex-shrink-0">
+                  <div className="w-32 h-32 rounded-2xl bg-accent/10 flex items-center justify-center">
+                    <Users className="w-16 h-16 text-accent" />
+                  </div>
+                </div>
+                <div className="prose prose-lg text-muted-foreground space-y-4">
+                  <p className="text-lg font-semibold text-foreground">Akeem Egbeyemi</p>
+                  <p>
+                    Akeem Egbeyemi founded PayLaterr with a vision to revolutionize how people manage their 
+                    recurring expenses. Drawing from personal experience with the challenges of bill management, 
+                    Akeem set out to create a solution that puts people first—no hidden fees, no predatory 
+                    interest rates, just straightforward financial assistance.
+                  </p>
+                </div>
+              </div>
+              
+              <h2 className="text-2xl font-bold text-foreground mb-6 mt-12">Our Story</h2>
               <div className="prose prose-lg text-muted-foreground space-y-4">
                 <p>
-                  We started AutoFloat after experiencing firsthand the challenges of managing multiple 
+                  We started PayLaterr after experiencing firsthand the challenges of managing multiple 
                   bills with varying due dates, amounts, and payment methods. Traditional credit 
                   options came with high interest rates and hidden fees that made things worse, not better.
                 </p>
@@ -67,7 +85,7 @@ export default function AboutPage() {
                   or penalties.
                 </p>
                 <p>
-                  Today, AutoFloat serves thousands of customers who trust us to help them stay on top of 
+                  Today, PayLaterr serves thousands of customers who trust us to help them stay on top of 
                   their essential expenses. Our auto verification feature unlocks even higher access 
                   limits without putting a lien on your vehicle.
                 </p>
