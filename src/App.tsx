@@ -17,6 +17,7 @@ const Plans = lazy(() => import("./pages/Plans"));
 const ConnectBank = lazy(() => import("./pages/ConnectBank"));
 const Verify = lazy(() => import("./pages/Verify"));
 const About = lazy(() => import("./pages/About"));
+const HowItWorks = lazy(() => import("./pages/HowItWorks"));
 const Careers = lazy(() => import("./pages/Careers"));
 const Press = lazy(() => import("./pages/Press"));
 const HelpCenter = lazy(() => import("./pages/HelpCenter"));
@@ -65,6 +66,7 @@ const App = () => (
               <Route path="/connect-bank" element={<ConnectBank />} />
               <Route path="/verify" element={<Verify />} />
               <Route path="/about" element={<About />} />
+              <Route path="/how-it-works" element={<HowItWorks />} />
               <Route path="/careers" element={<Careers />} />
               <Route path="/press" element={<Press />} />
               <Route path="/help" element={<HelpCenter />} />
