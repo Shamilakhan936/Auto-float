@@ -65,9 +65,14 @@ export default function AboutPage() {
                   <p className="text-lg font-semibold text-foreground">Akeem Egbeyemi</p>
                   <p>
                     Akeem Egbeyemi founded PayLaterr with a vision to revolutionize how people manage their 
-                    recurring expenses. Drawing from personal experience with the challenges of bill management, 
-                    Akeem set out to create a solution that puts people first—no hidden fees, no predatory 
-                    interest rates, just straightforward financial assistance.
+                    recurring expenses. Through that experience, he identified a gap in the market—consumers 
+                    with vehicles had an untapped asset that could help them access credit.
+                  </p>
+                  <p>
+                    This insight led to the creation of AutoFloat, a platform designed specifically to help 
+                    consumers use their cars as part of the underwriting process to get their recurring 
+                    expenses paid. AutoFloat provides access to credit where traditional routes fall short, 
+                    empowering people who have been overlooked by conventional financial systems.
                   </p>
                 </div>
               </div>
